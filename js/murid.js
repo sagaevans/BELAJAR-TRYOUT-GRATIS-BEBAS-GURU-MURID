@@ -172,15 +172,21 @@ async function handleSaveProfile() {
 // ==========================================
 async function loadPublishedExams() {
   try {
-    const q = query(collection(db, "exam_packages"), where("isPublished", "==", true), where("schoolId", "==", currentUserData.schoolId));
+    const q = query(collection(db, "exam_packages"), where("isPublished", "==", true));
     const snap = await getDocs(q);
     examPackages = [];
-    snap.forEach((docSnap) => { examPackages.push({ id: docSnap.id, ...docSnap.data() }); });
+    snap.forEach((docSnap) => {
+      const data = { id: docSnap.id, ...docSnap.data() };
+      // Filter by student's school client-side
+      if (data.schoolId === currentUserData.schoolId) {
+        examPackages.push(data);
+      }
+    });
     renderExamList();
   } catch (error) {
-    console.error("Gagal memuat ujian:", error);
+    console.error("Gagal memuat ujian:", error.code, error.message, error);
     const container = document.getElementById("exam-list-container");
-    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat ujian.</p>';
+    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat ujian: ' + (error.code || error.message) + '</p>';
   }
 }
 
@@ -274,17 +280,23 @@ function updateExamFilterKelas() {
 // ==========================================
 async function loadExamHistory() {
   try {
-    const q = query(collection(db, "exam_results"), where("studentId", "==", currentUser.uid), orderBy("submittedAt", "desc"));
+    const q = query(collection(db, "exam_results"), where("studentId", "==", currentUser.uid));
     const snap = await getDocs(q);
     examHistory = [];
     snap.forEach((docSnap) => { examHistory.push({ id: docSnap.id, ...docSnap.data() }); });
+    // Sort client-side by submittedAt descending
+    examHistory.sort((a, b) => {
+      const aTime = a.submittedAt && a.submittedAt.toMillis ? a.submittedAt.toMillis() : 0;
+      const bTime = b.submittedAt && b.submittedAt.toMillis ? b.submittedAt.toMillis() : 0;
+      return bTime - aTime;
+    });
     renderHistoryList();
     renderRecap();
     updateRingkasan();
   } catch (error) {
-    console.error("Gagal memuat riwayat:", error);
+    console.error("Gagal memuat riwayat:", error.code, error.message, error);
     const container = document.getElementById("history-list-container");
-    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat riwayat.</p>';
+    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat riwayat: ' + (error.code || error.message) + '</p>';
   }
 }
 

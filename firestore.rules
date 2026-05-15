@@ -35,8 +35,8 @@ service cloud.firestore {
     }
 
     match /teacher_questions/{questionId} {
-      allow read: if isSignedIn()
-        && resource.data.teacherId == request.auth.uid;
+      // Any signed-in user can read questions (students need this for exams)
+      allow read: if isSignedIn();
       allow create: if isSignedIn()
         && request.resource.data.teacherId == request.auth.uid;
       allow update: if isSignedIn()
@@ -61,9 +61,11 @@ service cloud.firestore {
 
     match /exam_results/{resultId} {
       // Teachers can read results for their exams
-      // Students can create their own results
+      // Students can read their own results
       allow read: if isSignedIn()
-        && resource.data.teacherId == request.auth.uid;
+        && (resource.data.teacherId == request.auth.uid
+            || resource.data.studentId == request.auth.uid);
+      // Students can create their own results
       allow create: if isSignedIn()
         && request.resource.data.studentId == request.auth.uid;
       allow update, delete: if false;

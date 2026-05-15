@@ -27,10 +27,16 @@ let startedAt = null;
 // INITIALIZATION
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  // Check if exam ID exists in localStorage
-  const examId = localStorage.getItem("currentExamId");
+  // Support both URL parameter and localStorage for exam ID
+  const urlParams = new URLSearchParams(window.location.search);
+  let examId = urlParams.get("examId") || urlParams.get("id") || localStorage.getItem("currentExamId");
+
+  console.log("Exam ID from URL:", urlParams.get("examId") || urlParams.get("id"));
+  console.log("Exam ID from localStorage:", localStorage.getItem("currentExamId"));
+  console.log("Final examId:", examId);
+
   if (!examId) {
-    window.location.href = "dashboard-murid.html";
+    showExamError("ID ujian tidak ditemukan.");
     return;
   }
 
@@ -82,21 +88,33 @@ async function loadExam(examId) {
   showLoading(true);
   try {
     // Fetch exam package
+    console.log("Loading exam package with ID:", examId);
     const examRef = doc(db, "exam_packages", examId);
     const examSnap = await getDoc(examRef);
 
     if (!examSnap.exists()) {
-      alert("Paket ujian tidak ditemukan.");
-      window.location.href = "dashboard-murid.html";
+      showExamError("Ujian tidak ditemukan.");
+      showLoading(false);
       return;
     }
 
     examPackage = { id: examSnap.id, ...examSnap.data() };
+    console.log("Loaded exam package:", examPackage);
 
     // Security: verify published
     if (!examPackage.isPublished) {
-      alert("Paket ujian ini tidak tersedia.");
-      window.location.href = "dashboard-murid.html";
+      showExamError("Ujian belum dipublish.");
+      showLoading(false);
+      return;
+    }
+
+    // Validate questionIds
+    const questionIds = examPackage.questionIds || [];
+    console.log("Question IDs:", questionIds);
+
+    if (questionIds.length === 0) {
+      showExamError("Paket ujian belum memiliki soal.");
+      showLoading(false);
       return;
     }
 
@@ -106,21 +124,27 @@ async function loadExam(examId) {
     if (titleEl) titleEl.textContent = examPackage.title;
     if (titleNav) titleNav.textContent = examPackage.title;
 
-    // Fetch all questions
-    const questionIds = examPackage.questionIds || [];
+    // Fetch all questions one by one (avoids "in" query limitations)
     questions = [];
-
     for (const qId of questionIds) {
-      const qRef = doc(db, "teacher_questions", qId);
-      const qSnap = await getDoc(qRef);
-      if (qSnap.exists()) {
-        questions.push({ id: qSnap.id, ...qSnap.data() });
+      try {
+        const qRef = doc(db, "teacher_questions", qId);
+        const qSnap = await getDoc(qRef);
+        if (qSnap.exists()) {
+          questions.push({ id: qSnap.id, ...qSnap.data() });
+        } else {
+          console.warn("Question not found:", qId);
+        }
+      } catch (qError) {
+        console.error("Gagal memuat soal:", qId, qError.code, qError.message);
       }
     }
 
+    console.log("Loaded questions:", questions.length, "of", questionIds.length);
+
     if (questions.length === 0) {
-      alert("Tidak ada soal dalam paket ini.");
-      window.location.href = "dashboard-murid.html";
+      showExamError("Soal ujian tidak ditemukan.");
+      showLoading(false);
       return;
     }
 
@@ -146,12 +170,25 @@ async function loadExam(examId) {
     if (examArea) examArea.style.display = "block";
 
   } catch (error) {
-    console.error("Gagal memuat ujian:", error);
-    alert("Gagal memuat ujian. Silakan coba lagi.");
-    window.location.href = "dashboard-murid.html";
+    console.error("Gagal memuat ujian:", error.code, error.message, error);
+    if (error.code) {
+      showExamError("Gagal memuat ujian: " + error.code);
+    } else {
+      showExamError("Gagal memuat ujian. Periksa console untuk detail.");
+    }
   } finally {
     showLoading(false);
   }
+}
+
+// ==========================================
+// SHOW EXAM ERROR (visible on page)
+// ==========================================
+function showExamError(message) {
+  const titleEl = document.getElementById("exam-title");
+  if (titleEl) titleEl.textContent = message;
+  const examArea = document.getElementById("exam-question-area");
+  if (examArea) examArea.style.display = "none";
 }
 
 // ==========================================
@@ -387,8 +424,11 @@ async function calculateAndSaveResult() {
       durationSeconds: elapsedSeconds
     };
 
+    console.log("Saving exam result:", { examId: resultData.examId, score: resultData.score, correctCount, wrongCount });
+
     // Save to Firestore
     const resultRef = await addDoc(collection(db, "exam_results"), resultData);
+    console.log("Exam result saved with ID:", resultRef.id);
 
     // Clear localStorage exam data
     localStorage.removeItem("currentExamId");
@@ -402,8 +442,12 @@ async function calculateAndSaveResult() {
     window.location.href = "hasil.html";
 
   } catch (error) {
-    console.error("Gagal menyimpan hasil:", error);
-    alert("Gagal menyimpan hasil ujian. Silakan coba lagi.");
+    console.error("Gagal menyimpan hasil:", error.code, error.message, error);
+    if (error.code) {
+      alert("Gagal menyimpan hasil ujian: " + error.code);
+    } else {
+      alert("Gagal menyimpan hasil ujian. Periksa console untuk detail.");
+    }
     showLoading(false);
   }
 }
