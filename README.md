@@ -3,16 +3,19 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Early%20Development-yellow)
 
+Platform latihan ujian (tryout) online gratis untuk pelajar SMP, SMA, dan SMK di Indonesia. Guru membuat soal, murid mengerjakan ujian, nilai dihitung otomatis. Semua gratis, tanpa biaya.
+
 ## Tentang Project
 
-Platform latihan ujian (tryout) online gratis untuk pelajar SMP, SMA, dan SMK di Indonesia. Guru bisa membuat soal dan paket ujian, murid bisa mengerjakan ujian dan melihat nilai secara otomatis. Semua berjalan di browser, di-host gratis di GitHub Pages, dengan data tersimpan di Firebase.
+Belajar Tryout Gratis adalah website ujian online sederhana yang di-host di GitHub Pages dan menggunakan Firebase sebagai backend. Tujuannya agar siapa saja bisa meng-clone repo ini dan langsung punya platform tryout untuk sekolahnya sendiri.
 
 ## Tujuan
 
 - Guru dapat membuat soal, menyusun paket ujian, dan mempublish ujian untuk murid.
 - Murid dapat memilih sekolah, mengerjakan ujian yang tersedia, dan melihat hasil secara otomatis.
-- Nilai dihitung langsung setelah ujian selesai: `(jawaban benar / total soal) x 100`.
-- Semua antarmuka (UI) dalam Bahasa Indonesia.
+- Nilai dihitung langsung setelah ujian selesai.
+- Semua data disimpan di Firebase Cloud Firestore.
+- Antarmuka (UI) sepenuhnya dalam Bahasa Indonesia.
 
 ## Fitur Utama
 
@@ -33,8 +36,8 @@ Platform latihan ujian (tryout) online gratis untuk pelajar SMP, SMA, dan SMK di
 
 ### Admin/Owner
 - Halaman admin tersedia di `admin.html`
-- Konsep: owner repo akan bisa mengakses dashboard admin menggunakan token khusus yang dikonfigurasi sendiri
-- Fitur admin (monitoring data, moderasi konten) dalam tahap pengembangan
+- Konsep admin token untuk owner repo direncanakan untuk pengembangan selanjutnya
+- Fitur monitoring dan moderasi data dalam tahap perencanaan
 
 ## Teknologi
 
@@ -45,35 +48,30 @@ Platform latihan ujian (tryout) online gratis untuk pelajar SMP, SMA, dan SMK di
 - Firebase Authentication (Google Sign-In)
 - Firebase Cloud Firestore (database)
 
-Tidak memerlukan Node.js, PHP, backend server, atau build tools.
-
 ## Struktur Folder
 
 ```
 BELAJAR-TRYOUT-GRATIS-BEBAS-GURU-MURID/
 ├── index.html
+├── tryout.html
 ├── dashboard-guru.html
 ├── dashboard-murid.html
 ├── ujian.html
 ├── hasil.html
 ├── admin.html
-├── assets/
-│   ├── css/
-│   │   └── style.css
-│   └── js/
-│       ├── firebase-config.js
-│       ├── auth.js
-│       ├── guru.js
-│       ├── murid.js
-│       ├── ujian.js
-│       ├── hasil.js
-│       └── admin.js
+├── css/
+│   └── style.css
+├── js/
+│   ├── firebase-config.js
+│   ├── auth.js
+│   ├── guru.js
+│   ├── murid.js
+│   ├── ujian.js
+│   ├── hasil.js
+│   ├── admin.js
+│   └── tryout.js
 ├── data/
 │   └── bank-soal-template/
-│       ├── FORMAT.md
-│       ├── smp/
-│       ├── sma/
-│       └── smk/
 ├── firestore.rules
 ├── SETUP.md
 ├── README.md
@@ -90,25 +88,23 @@ BELAJAR-TRYOUT-GRATIS-BEBAS-GURU-MURID/
 - `exam_results` — hasil ujian murid
 
 ### Folder `data/bank-soal-template/`
-- Berisi file JSON kosong (`[]`) sebagai template struktur soal
-- Tidak digunakan oleh sistem secara aktif
-- Hanya referensi format bagi owner yang ingin menyiapkan soal di luar Firestore
-- Format soal dijelaskan di `data/bank-soal-template/FORMAT.md`
+- Berisi file JSON kosong sebagai template referensi format soal
+- Tidak digunakan secara aktif oleh sistem
+- Soal yang dibuat guru disimpan di Firestore, bukan di file JSON lokal
 
 ## Status Project
 
-Project ini dalam tahap **early development**. Fitur-fitur inti sedang dibangun secara bertahap. Firestore security rules sudah ditulis sebagai draft di file `firestore.rules` tetapi belum diterapkan dan diuji di Firebase Console.
+Project ini dalam tahap early development. Fitur-fitur inti sedang dibangun bertahap. File `firestore.rules` berisi draft security rules yang belum diterapkan ke Firebase Console.
 
 ## Deploy
 
-1. Clone atau fork repository ini
-2. Buat project di [Firebase Console](https://console.firebase.google.com)
-3. Isi `assets/js/firebase-config.js` dengan konfigurasi Firebase
-4. Aktifkan Google Authentication dan Firestore di Firebase Console
-5. Push ke GitHub, aktifkan GitHub Pages (Settings → Pages → Branch: main)
-
-Panduan lebih lengkap tersedia di [SETUP.md](SETUP.md).
+1. Push semua file ke GitHub repository
+2. Buka Settings → Pages
+3. Source: Deploy from a branch
+4. Branch: main → folder: / (root)
+5. Klik Save
+6. Tunggu beberapa menit, website akan live
 
 ## License
 
-MIT License — bebas digunakan, dimodifikasi, dan didistribusikan untuk keperluan pendidikan.
+MIT License — bebas digunakan, dimodifikasi, dan didistribusikan.
