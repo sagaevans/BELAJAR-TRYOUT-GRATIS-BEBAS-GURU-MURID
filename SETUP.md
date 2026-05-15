@@ -91,6 +91,9 @@ const firebaseConfig = {
 
 ### 5.2 Terapkan Security Rules
 
+> **PENTING:** Pushing `firestore.rules` ke GitHub TIDAK otomatis menerapkan rules ke Firebase.
+> Kamu harus copy-paste rules secara manual ke Firebase Console.
+
 1. Di Firestore → tab **Rules**
 2. Hapus semua isi rules yang ada
 3. Copy-paste seluruh isi file `firestore.rules` dari repo ini

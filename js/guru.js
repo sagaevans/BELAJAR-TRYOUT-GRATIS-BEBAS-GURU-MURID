@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/f
 import {
   doc,
   getDoc,
+  setDoc,
   updateDoc,
   addDoc,
   deleteDoc,
@@ -135,30 +136,63 @@ async function handleSaveProfile() {
   if (!city) { showFormError("Isi kota sekolah."); return; }
   showLoading(true);
   try {
-    const usernameQuery = query(collection(db, "users"), where("teacherUsername", "==", username));
-    const usernameSnap = await getDocs(usernameQuery);
-    if (!usernameSnap.empty) { showLoading(false); showUsernameError("Username sudah dipakai, coba yang lain."); return; }
+    // Check username uniqueness via teacher_usernames/{username}
+    const usernameRef = doc(db, "teacher_usernames", username);
+    const usernameSnap = await getDoc(usernameRef);
+    if (usernameSnap.exists() && usernameSnap.data().uid !== currentUser.uid) {
+      showLoading(false);
+      showUsernameError("Username sudah digunakan. Pilih username lain.");
+      return;
+    }
+
+    // Generate school data
     const displayName = `${level} ${status} ${nameNumber} ${city}`;
     const slug = displayName.toLowerCase().replace(/\s+/g, "-");
-    let schoolId = null;
-    const schoolQuery = query(collection(db, "schools"), where("slug", "==", slug));
-    const schoolSnap = await getDocs(schoolQuery);
-    if (!schoolSnap.empty) { schoolId = schoolSnap.docs[0].id; }
-    else {
-      const newSchoolRef = await addDoc(collection(db, "schools"), { level, status, nameNumber, city, displayName, slug, createdAt: serverTimestamp(), createdBy: currentUser.uid });
-      schoolId = newSchoolRef.id;
+
+    // Save school using slug as document ID
+    const schoolRef = doc(db, "schools", slug);
+    const schoolSnap = await getDoc(schoolRef);
+    if (!schoolSnap.exists()) {
+      await setDoc(schoolRef, {
+        level,
+        status,
+        nameNumber,
+        city,
+        displayName,
+        slug,
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     }
+
+    // Reserve username in teacher_usernames collection
+    if (!usernameSnap.exists()) {
+      await setDoc(usernameRef, {
+        uid: currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    // Update user document
     const userRef = doc(db, "users", currentUser.uid);
-    await updateDoc(userRef, { teacherUsername: username, schoolId, schoolSlug: slug, schoolName: displayName });
-    currentUserData = { ...currentUserData, teacherUsername: username, schoolId, schoolSlug: slug, schoolName: displayName };
+    await updateDoc(userRef, {
+      teacherUsername: username,
+      schoolId: slug,
+      schoolSlug: slug,
+      schoolName: displayName,
+      updatedAt: serverTimestamp()
+    });
+
+    currentUserData = { ...currentUserData, teacherUsername: username, schoolId: slug, schoolSlug: slug, schoolName: displayName };
     showDashboard();
     showSuccess("Profil berhasil disimpan!");
     await loadQuestions();
     await loadPackages();
     await loadTeacherResults();
   } catch (error) {
-    console.error("Gagal menyimpan profil:", error);
-    showFormError("Gagal menyimpan profil. Silakan coba lagi.");
+    console.error("Gagal menyimpan profil guru:", error.code, error.message, error);
+    showFormError("Gagal menyimpan profil: " + (error.code || error.message));
   } finally { showLoading(false); }
 }
 
