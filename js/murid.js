@@ -22,6 +22,8 @@ let currentUserData = null;
 let schoolsList = [];
 let examPackages = [];
 let examHistory = [];
+let remedialAccessList = [];
+let completedExamIds = new Set();
 let pendingExamPackage = null;
 
 // ==========================================
@@ -90,7 +92,8 @@ async function checkStudentProfile(uid) {
     currentUserData = userSnap.data();
     if (currentUserData.studentName && currentUserData.studentUniqueNumber && currentUserData.studentNumberType && currentUserData.schoolId) {
       showDashboard();
-      await Promise.all([loadPublishedExams(), loadExamHistory()]);
+      await loadExamHistory();
+      await loadPublishedExams();
     } else {
       await loadSchoolsDropdown();
       showProfileForm();
@@ -160,7 +163,8 @@ async function handleSaveProfile() {
     currentUserData = { ...currentUserData, studentName, studentUniqueNumber: studentNumber, studentNumberType, schoolId: selectedSchoolId, schoolSlug, schoolName };
     showDashboard();
     showSuccess("Profil berhasil disimpan!");
-    await Promise.all([loadPublishedExams(), loadExamHistory()]);
+    await loadExamHistory();
+    await loadPublishedExams();
   } catch (error) {
     console.error("Gagal menyimpan profil:", error);
     showFormError("Gagal menyimpan profil. Silakan coba lagi.");
@@ -172,16 +176,50 @@ async function handleSaveProfile() {
 // ==========================================
 async function loadPublishedExams() {
   try {
+    // Load all published packages for this school
     const q = query(collection(db, "exam_packages"), where("isPublished", "==", true));
     const snap = await getDocs(q);
-    examPackages = [];
+    let allPackages = [];
     snap.forEach((docSnap) => {
       const data = { id: docSnap.id, ...docSnap.data() };
-      // Filter by student's school client-side
       if (data.schoolId === currentUserData.schoolId) {
-        examPackages.push(data);
+        allPackages.push(data);
       }
     });
+
+    // Build set of completed exam IDs from history
+    completedExamIds = new Set(examHistory.map(r => r.examId));
+    console.log("Completed exam IDs:", [...completedExamIds]);
+
+    // Load active remedial access for this student
+    try {
+      const rq = query(collection(db, "remedial_access"), where("studentId", "==", currentUser.uid), where("status", "==", "active"));
+      const rSnap = await getDocs(rq);
+      remedialAccessList = [];
+      rSnap.forEach((docSnap) => { remedialAccessList.push({ id: docSnap.id, ...docSnap.data() }); });
+    } catch (e) {
+      console.warn("Could not load remedial access:", e);
+      remedialAccessList = [];
+    }
+    console.log("Active remedial access:", remedialAccessList);
+
+    // Build set of exam IDs with active remedial
+    const remedialExamIds = new Set(remedialAccessList.filter(r => !r.used).map(r => r.examId));
+
+    // Filter: show only exams not completed OR with active remedial
+    examPackages = [];
+    allPackages.forEach(pkg => {
+      if (!completedExamIds.has(pkg.id)) {
+        // Not completed — show as normal
+        examPackages.push({ ...pkg, _isRemedial: false });
+      } else if (remedialExamIds.has(pkg.id)) {
+        // Completed but has active remedial — show with remedial badge
+        examPackages.push({ ...pkg, _isRemedial: true });
+      }
+      // Otherwise: completed and no remedial — hide
+    });
+    console.log("Available exams after filtering:", examPackages.length);
+
     renderExamList();
   } catch (error) {
     console.error("Gagal memuat ujian:", error.code, error.message, error);
@@ -212,7 +250,8 @@ function renderExamList() {
   let html = "";
   filtered.forEach((pkg) => {
     const codeBadge = pkg.accessCode ? '<span class="badge badge-code">Perlu Kode Akses</span>' : '';
-    html += `<div class="exam-card"><div class="exam-card-header"><h3>${pkg.title}</h3>${codeBadge}</div><div class="exam-card-meta"><span>👨‍🏫 ${pkg.teacherUsername}</span><span>${pkg.mapel} — ${pkg.kelas} — ${pkg.jenjang}</span><span>📝 ${pkg.totalQuestions} soal</span></div><button class="btn btn-primary btn-take-exam" data-id="${pkg.id}">Kerjakan Ujian</button></div>`;
+    const remedialBadge = pkg._isRemedial ? '<span class="badge badge-draft" style="background:#f6ad55;color:#744210;">Remedial</span>' : '';
+    html += `<div class="exam-card"><div class="exam-card-header"><h3>${pkg.title}</h3>${remedialBadge}${codeBadge}</div><div class="exam-card-meta"><span>👨‍🏫 ${pkg.teacherUsername}</span><span>${pkg.mapel} — ${pkg.kelas} — ${pkg.jenjang}</span><span>📝 ${pkg.totalQuestions} soal</span></div><button class="btn btn-primary btn-take-exam" data-id="${pkg.id}">Kerjakan Ujian</button></div>`;
   });
   container.innerHTML = html;
   container.querySelectorAll(".btn-take-exam").forEach(btn => {

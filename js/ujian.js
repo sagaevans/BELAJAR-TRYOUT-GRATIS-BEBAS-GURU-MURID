@@ -6,7 +6,11 @@ import {
   doc,
   getDoc,
   addDoc,
+  updateDoc,
   collection,
+  query,
+  where,
+  getDocs,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
@@ -25,6 +29,9 @@ let durationMinutes = 60;
 let startedAt = null;
 let isSubmitting = false;
 let isSubmitted = false;
+let attemptType = "regular"; // "regular" or "remedial"
+let attemptNumber = 1;
+let remedialAccessId = null;
 
 // ==========================================
 // INITIALIZATION
@@ -109,6 +116,35 @@ async function loadExam(examId) {
       showExamError("Ujian belum dipublish.");
       showLoading(false);
       return;
+    }
+
+    // Check if student already completed this exam
+    const prevResultsQ = query(collection(db, "exam_results"), where("examId", "==", examId), where("studentId", "==", currentUser.uid));
+    const prevResultsSnap = await getDocs(prevResultsQ);
+    const previousAttempts = prevResultsSnap.size;
+
+    if (previousAttempts > 0) {
+      // Student already took this exam — check for active remedial access
+      const accessDocId = `${examId}_${currentUser.uid}`;
+      const accessRef = doc(db, "remedial_access", accessDocId);
+      const accessSnap = await getDoc(accessRef);
+
+      if (accessSnap.exists() && accessSnap.data().status === "active" && !accessSnap.data().used) {
+        // Remedial access exists — allow as remedial
+        attemptType = "remedial";
+        attemptNumber = previousAttempts + 1;
+        remedialAccessId = accessDocId;
+        console.log("Remedial access found. Attempt:", attemptNumber);
+      } else {
+        // No active remedial — block
+        showExamError("Ujian ini sudah pernah dikerjakan. Hubungi guru jika membutuhkan remedial.");
+        showLoading(false);
+        return;
+      }
+    } else {
+      attemptType = "regular";
+      attemptNumber = 1;
+      remedialAccessId = null;
     }
 
     // Validate questionIds
@@ -495,15 +531,29 @@ async function submitExam({ autoSubmitted }) {
       durationSeconds: durationSeconds,
       timeSpentSeconds: timeSpentSeconds,
       autoSubmitted: autoSubmitted,
+      attemptType: attemptType,
+      attemptNumber: attemptNumber,
+      remedialAccessId: remedialAccessId || null,
       startedAt: startedAt.toISOString(),
       submittedAt: serverTimestamp()
     };
 
-    console.log("Saving exam result:", { examId: resultData.examId, score: resultData.score, correctCount, wrongCount, timeSpentSeconds, autoSubmitted });
+    console.log("Saving exam result:", { examId: resultData.examId, score: resultData.score, correctCount, wrongCount, timeSpentSeconds, autoSubmitted, attemptType, attemptNumber });
 
     // Save to Firestore
     const resultRef = await addDoc(collection(db, "exam_results"), resultData);
     console.log("Exam result saved with ID:", resultRef.id);
+
+    // If remedial, mark remedial_access as used
+    if (attemptType === "remedial" && remedialAccessId) {
+      try {
+        const accessRef = doc(db, "remedial_access", remedialAccessId);
+        await updateDoc(accessRef, { used: true, status: "used", usedAt: serverTimestamp() });
+        console.log("Remedial access marked as used:", remedialAccessId);
+      } catch (e) {
+        console.warn("Could not update remedial access:", e);
+      }
+    }
 
     isSubmitted = true;
 

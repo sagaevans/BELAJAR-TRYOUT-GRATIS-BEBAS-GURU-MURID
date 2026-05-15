@@ -883,19 +883,75 @@ function renderResultList() {
         const d = r.submittedAt.toDate();
         dateStr = `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
       }
+      const attemptBadge = r.attemptType === "remedial"
+        ? '<span class="badge badge-draft" style="background:#f6ad55;color:#744210;font-size:0.7rem;">Remedial</span>'
+        : '<span class="badge badge-published" style="font-size:0.7rem;">Reguler</span>';
       html += `<div class="result-student-row">
-        <div class="result-student-info"><strong>${r.studentName}</strong><span>${r.studentUniqueNumber} — ${r.studentNumberType}</span></div>
+        <div class="result-student-info"><strong>${r.studentName}</strong><span>${r.studentUniqueNumber} — ${r.studentNumberType}</span> ${attemptBadge}</div>
         <div class="result-student-stats">
           <span class="history-score ${scoreClass}">${r.score}</span>
           <span>Benar: ${r.correctCount} | Salah: ${r.wrongCount}</span>
           <span>${mins}:${secs}</span>
           <span>${dateStr}</span>
+          <button class="btn-sm btn-remedial" data-exam-id="${r.examId}" data-exam-title="${r.examTitle}" data-student-id="${r.studentId}" data-student-name="${r.studentName}" data-student-number="${r.studentUniqueNumber}">Beri Remedial</button>
         </div>
       </div>`;
     });
     html += `</div></div>`;
   });
   container.innerHTML = html;
+
+  // Bind remedial buttons
+  container.querySelectorAll(".btn-remedial").forEach(btn => {
+    btn.addEventListener("click", () => handleGiveRemedial(btn.dataset));
+  });
+}
+
+// ==========================================
+// REMEDIAL ACCESS — GIVE REMEDIAL
+// ==========================================
+async function handleGiveRemedial(dataset) {
+  const { examId, examTitle, studentId, studentName, studentNumber } = dataset;
+  if (!examId || !studentId) return;
+
+  const accessDocId = `${examId}_${studentId}`;
+  const accessRef = doc(db, "remedial_access", accessDocId);
+
+  showLoading(true);
+  try {
+    // Check if active remedial already exists
+    const accessSnap = await getDoc(accessRef);
+    if (accessSnap.exists() && accessSnap.data().status === "active" && !accessSnap.data().used) {
+      alert("Murid ini sudah memiliki akses remedial aktif.");
+      showLoading(false);
+      return;
+    }
+
+    // Create/update remedial access
+    const remedialData = {
+      examId,
+      examTitle: examTitle || "",
+      studentId,
+      studentName: studentName || "",
+      studentUniqueNumber: studentNumber || "",
+      teacherId: currentUser.uid,
+      teacherUsername: currentUserData.teacherUsername,
+      schoolName: currentUserData.schoolName || "",
+      status: "active",
+      used: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    console.log("Giving remedial access:", remedialData);
+    await setDoc(accessRef, remedialData);
+    showSuccess("Remedial berhasil diberikan kepada murid.");
+  } catch (error) {
+    console.error("Gagal memberi remedial:", error.code, error.message, error);
+    alert("Gagal memberi remedial: " + (error.code || error.message));
+  } finally {
+    showLoading(false);
+  }
 }
 
 // ==========================================
