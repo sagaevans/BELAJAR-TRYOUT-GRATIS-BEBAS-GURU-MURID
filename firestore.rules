@@ -46,11 +46,27 @@ service cloud.firestore {
     }
 
     match /exam_packages/{examId} {
-      allow read, write: if false;
+      // Teachers can read their own packages
+      // Students can read published packages
+      allow read: if isSignedIn()
+        && (resource.data.teacherId == request.auth.uid
+            || resource.data.isPublished == true);
+      allow create: if isSignedIn()
+        && request.resource.data.teacherId == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.teacherId == request.auth.uid;
+      allow delete: if isSignedIn()
+        && resource.data.teacherId == request.auth.uid;
     }
 
     match /exam_results/{resultId} {
-      allow read, write: if false;
+      // Teachers can read results for their exams
+      // Students can create their own results
+      allow read: if isSignedIn()
+        && resource.data.teacherId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if false;
     }
   }
 }

@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === PACKAGE FORM EVENTS ===
   const pJenjang = document.getElementById("p-jenjang");
-  if (pJenjang) pJenjang.addEventListener("change", updatePaketKelasOptions);
+  if (pJenjang) pJenjang.addEventListener("change", () => { updatePaketKelasOptions(); updatePaketMapelOptions(); });
   const btnSavePaket = document.getElementById("btn-save-paket");
   if (btnSavePaket) btnSavePaket.addEventListener("click", handleSavePackage);
   const btnCancelPaket = document.getElementById("btn-cancel-paket");
@@ -382,17 +382,23 @@ function resetQuestionForm() {
 // ==========================================
 async function loadPackages() {
   try {
-    const q = query(collection(db, "exam_packages"), where("teacherId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "exam_packages"), where("teacherId", "==", currentUser.uid));
     const snap = await getDocs(q);
     packagesList = [];
     snap.forEach((docSnap) => { packagesList.push({ id: docSnap.id, ...docSnap.data() }); });
+    // Sort client-side by createdAt descending
+    packagesList.sort((a, b) => {
+      const aTime = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const bTime = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return bTime - aTime;
+    });
     const totalEl = document.getElementById("total-paket-count");
     if (totalEl) totalEl.textContent = packagesList.length;
     renderPackageList();
   } catch (error) {
-    console.error("Gagal memuat paket:", error);
+    console.error("Gagal memuat paket:", error.code, error.message, error);
     const container = document.getElementById("paket-list-container");
-    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat paket.</p>';
+    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat paket: ' + (error.code || error.message) + '</p>';
   }
 }
 
@@ -486,7 +492,7 @@ async function handleSavePackage() {
   const title = document.getElementById("p-title").value.trim();
   const jenjang = document.getElementById("p-jenjang").value;
   const kelas = document.getElementById("p-kelas").value;
-  const mapel = document.getElementById("p-mapel").value.trim();
+  const mapel = document.getElementById("p-mapel").value;
   const accessCode = document.getElementById("p-access-code").value.trim();
   const publishRadio = document.querySelector('input[name="p-publish"]:checked');
   const isPublished = publishRadio ? publishRadio.value === "publish" : false;
@@ -495,7 +501,7 @@ async function handleSavePackage() {
   if (!title) { showPaketError("Isi judul paket."); return; }
   if (!jenjang) { showPaketError("Pilih jenjang."); return; }
   if (!kelas) { showPaketError("Pilih kelas."); return; }
-  if (!mapel) { showPaketError("Isi mata pelajaran."); return; }
+  if (!mapel) { showPaketError("Pilih mata pelajaran."); return; }
   if (selectedQuestionIds.size === 0) { showPaketError("Pilih minimal 1 soal."); return; }
   showLoading(true);
   try {
@@ -510,7 +516,8 @@ async function handleSavePackage() {
       questionIds,
       totalQuestions: questionIds.length,
       accessCode: accessCode || "",
-      isPublished
+      isPublished,
+      updatedAt: serverTimestamp()
     };
     const editId = document.getElementById("edit-paket-id").value;
     if (editId) {
@@ -522,11 +529,14 @@ async function handleSavePackage() {
     } else {
       data.createdAt = serverTimestamp();
       await addDoc(collection(db, "exam_packages"), data);
-      showSuccess("Paket ujian berhasil disimpan!");
+      showSuccess("Paket ujian berhasil disimpan.");
     }
     resetPackageForm();
     await loadPackages();
-  } catch (error) { console.error("Gagal menyimpan paket:", error); showPaketError("Gagal menyimpan paket."); }
+  } catch (error) {
+    console.error("Gagal menyimpan paket:", error.code, error.message, error);
+    showPaketError("Gagal menyimpan paket: " + (error.code || error.message));
+  }
   finally { showLoading(false); }
 }
 
@@ -541,6 +551,7 @@ function handleEditPackage(packageId) {
   document.getElementById("p-title").value = pkg.title;
   document.getElementById("p-jenjang").value = pkg.jenjang;
   updatePaketKelasOptions();
+  updatePaketMapelOptions();
   document.getElementById("p-kelas").value = pkg.kelas;
   document.getElementById("p-mapel").value = pkg.mapel;
   document.getElementById("p-access-code").value = pkg.accessCode || "";
@@ -597,7 +608,7 @@ function resetPackageForm() {
   document.getElementById("p-title").value = "";
   document.getElementById("p-jenjang").value = "";
   document.getElementById("p-kelas").innerHTML = '<option value="">— Pilih Kelas —</option>';
-  document.getElementById("p-mapel").value = "";
+  document.getElementById("p-mapel").innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
   document.getElementById("p-access-code").value = "";
   const radios = document.querySelectorAll('input[name="p-publish"]');
   radios.forEach(r => { r.checked = r.value === "draft"; });
@@ -662,6 +673,16 @@ function updatePaketKelasOptions() {
   let html = '<option value="">— Pilih Kelas —</option>';
   getKelasOptions(jenjang).forEach(k => { html += `<option value="${k}">${k}</option>`; });
   el.innerHTML = html;
+}
+
+function updatePaketMapelOptions() {
+  const jenjang = document.getElementById("p-jenjang").value;
+  const mapelSelect = document.getElementById("p-mapel");
+  if (!mapelSelect) return;
+  let html = '<option value="">-- Pilih Mata Pelajaran --</option>';
+  const subjects = MAPEL_BY_JENJANG[jenjang] || [];
+  subjects.forEach(s => { html += `<option value="${s}">${s}</option>`; });
+  mapelSelect.innerHTML = html;
 }
 
 function updatePaketFilterKelas() {
@@ -754,10 +775,16 @@ let teacherResults = [];
 
 async function loadTeacherResults() {
   try {
-    const q = query(collection(db, "exam_results"), where("teacherId", "==", currentUser.uid), orderBy("submittedAt", "desc"));
+    const q = query(collection(db, "exam_results"), where("teacherId", "==", currentUser.uid));
     const snap = await getDocs(q);
     teacherResults = [];
     snap.forEach((docSnap) => { teacherResults.push({ id: docSnap.id, ...docSnap.data() }); });
+    // Sort client-side by submittedAt descending
+    teacherResults.sort((a, b) => {
+      const aTime = a.submittedAt && a.submittedAt.toMillis ? a.submittedAt.toMillis() : 0;
+      const bTime = b.submittedAt && b.submittedAt.toMillis ? b.submittedAt.toMillis() : 0;
+      return bTime - aTime;
+    });
 
     // Update ringkasan stats
     const pesertaEl = document.getElementById("total-peserta-count");
