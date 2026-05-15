@@ -202,18 +202,25 @@ async function handleSaveProfile() {
 // ==========================================
 async function loadQuestions() {
   try {
-    const q = query(collection(db, "teacher_questions"), where("teacherId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+    // Simple query without orderBy to avoid composite index requirement
+    const q = query(collection(db, "teacher_questions"), where("teacherId", "==", currentUser.uid));
     const snap = await getDocs(q);
     questionsList = [];
     snap.forEach((docSnap) => { questionsList.push({ id: docSnap.id, ...docSnap.data() }); });
+    // Sort client-side by createdAt descending
+    questionsList.sort((a, b) => {
+      const aTime = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const bTime = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return bTime - aTime;
+    });
     const totalEl = document.getElementById("total-soal-count");
     if (totalEl) totalEl.textContent = questionsList.length;
     renderQuestionList();
     renderQuestionSelectList();
   } catch (error) {
-    console.error("Gagal memuat soal:", error);
+    console.error("Gagal memuat soal:", error.code, error.message, error);
     const container = document.getElementById("soal-list-container");
-    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat soal.</p>';
+    if (container) container.innerHTML = '<p class="text-center" style="color:#c53030;padding:1rem;">Gagal memuat soal: ' + (error.code || error.message) + '</p>';
   }
 }
 
@@ -252,7 +259,7 @@ function renderQuestionList() {
 async function handleSaveQuestion() {
   const jenjang = document.getElementById("q-jenjang").value;
   const kelas = document.getElementById("q-kelas").value;
-  const mapel = document.getElementById("q-mapel").value.trim();
+  const mapel = document.getElementById("q-mapel").value;
   const questionText = document.getElementById("q-text").value.trim();
   const optA = document.getElementById("q-option-a").value.trim();
   const optB = document.getElementById("q-option-b").value.trim();
@@ -264,29 +271,47 @@ async function handleSaveQuestion() {
   if (errEl) errEl.style.display = "none";
   if (!jenjang) { showSoalError("Pilih jenjang."); return; }
   if (!kelas) { showSoalError("Pilih kelas."); return; }
-  if (!mapel) { showSoalError("Isi mata pelajaran."); return; }
+  if (!mapel) { showSoalError("Pilih mata pelajaran."); return; }
   if (!questionText) { showSoalError("Isi teks soal."); return; }
-  if (!optA || !optB || !optC || !optD) { showSoalError("Semua pilihan jawaban harus diisi."); return; }
+  if (!optA || !optB || !optC || !optD) { showSoalError("Lengkapi semua pilihan jawaban."); return; }
   if (!correctAnswer) { showSoalError("Pilih jawaban benar."); return; }
   showLoading(true);
   try {
-    const data = { teacherId: currentUser.uid, teacherUsername: currentUserData.teacherUsername, schoolId: currentUserData.schoolId, schoolSlug: currentUserData.schoolSlug, schoolName: currentUserData.schoolName, jenjang, kelas, mapel, questionText, options: { A: optA, B: optB, C: optC, D: optD }, correctAnswer, explanation };
+    const questionData = {
+      teacherId: currentUser.uid,
+      teacherUsername: currentUserData.teacherUsername,
+      schoolId: currentUserData.schoolId,
+      schoolSlug: currentUserData.schoolSlug,
+      schoolName: currentUserData.schoolName,
+      jenjang,
+      kelas,
+      mapel,
+      questionText,
+      options: { A: optA, B: optB, C: optC, D: optD },
+      correctAnswer,
+      explanation,
+      updatedAt: serverTimestamp()
+    };
+    console.log("Saving question payload:", questionData);
     const editId = document.getElementById("edit-question-id").value;
     if (editId) {
       const qRef = doc(db, "teacher_questions", editId);
       const qSnap = await getDoc(qRef);
       if (!qSnap.exists() || qSnap.data().teacherId !== currentUser.uid) { showSoalError("Tidak ada izin."); showLoading(false); return; }
-      await updateDoc(qRef, data);
+      await updateDoc(qRef, questionData);
       showSuccess("Soal berhasil diupdate!");
     } else {
-      data.createdAt = serverTimestamp();
-      await addDoc(collection(db, "teacher_questions"), data);
-      showSuccess("Soal berhasil disimpan!");
+      questionData.createdAt = serverTimestamp();
+      const docRef = await addDoc(collection(db, "teacher_questions"), questionData);
+      console.log("Question saved with ID:", docRef.id);
+      showSuccess("Soal berhasil disimpan.");
     }
     resetQuestionForm();
     await loadQuestions();
-  } catch (error) { console.error("Gagal menyimpan soal:", error); showSoalError("Gagal menyimpan soal."); }
-  finally { showLoading(false); }
+  } catch (error) {
+    console.error("Gagal menyimpan soal:", error.code, error.message, error);
+    showSoalError("Gagal menyimpan soal: " + (error.code || error.message));
+  } finally { showLoading(false); }
 }
 
 // ==========================================
@@ -337,7 +362,7 @@ function resetQuestionForm() {
   document.getElementById("edit-question-id").value = "";
   document.getElementById("q-jenjang").value = "";
   document.getElementById("q-kelas").innerHTML = '<option value="">— Pilih Kelas —</option>';
-  document.getElementById("q-mapel").value = "";
+  document.getElementById("q-mapel").innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
   document.getElementById("q-text").value = "";
   document.getElementById("q-option-a").value = "";
   document.getElementById("q-option-b").value = "";
@@ -595,6 +620,12 @@ function getKelasOptions(jenjang) {
   return [];
 }
 
+const MAPEL_BY_JENJANG = {
+  SMP: ["Matematika","Bahasa Indonesia","Bahasa Inggris","IPA","IPS","PPKn","Informatika","Seni Budaya","PJOK","Prakarya"],
+  SMA: ["Matematika","Bahasa Indonesia","Bahasa Inggris","Fisika","Kimia","Biologi","Ekonomi","Geografi","Sosiologi","Sejarah","PPKn","Informatika"],
+  SMK: ["Matematika","Bahasa Indonesia","Bahasa Inggris","PPKn","Sejarah","Informatika","Projek IPAS","Dasar-Dasar Kejuruan","Konsentrasi Keahlian","Produk Kreatif dan Kewirausahaan"]
+};
+
 function updateKelasOptions() {
   const jenjang = document.getElementById("q-jenjang").value;
   const kelasSelect = document.getElementById("q-kelas");
@@ -602,6 +633,17 @@ function updateKelasOptions() {
   let html = '<option value="">— Pilih Kelas —</option>';
   getKelasOptions(jenjang).forEach(k => { html += `<option value="${k}">${k}</option>`; });
   kelasSelect.innerHTML = html;
+  updateMapelOptions();
+}
+
+function updateMapelOptions() {
+  const jenjang = document.getElementById("q-jenjang").value;
+  const mapelSelect = document.getElementById("q-mapel");
+  if (!mapelSelect) return;
+  let html = '<option value="">-- Pilih Mata Pelajaran --</option>';
+  const subjects = MAPEL_BY_JENJANG[jenjang] || [];
+  subjects.forEach(s => { html += `<option value="${s}">${s}</option>`; });
+  mapelSelect.innerHTML = html;
 }
 
 function updateFilterKelas() {
