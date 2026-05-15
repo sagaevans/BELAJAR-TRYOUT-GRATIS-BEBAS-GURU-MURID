@@ -1,14 +1,14 @@
 // ujian.js — Mengelola alur pengerjaan ujian: navigasi soal, pilih jawaban, timer, dan submit hasil
 
 import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 import {
   doc,
   getDoc,
   addDoc,
   collection,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 // ==========================================
 // GLOBAL STATE

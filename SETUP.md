@@ -72,10 +72,11 @@ const firebaseConfig = {
 3. Isi "Project support email" dengan email kamu
 4. Klik **Save**
 5. Scroll ke bawah → **Authorized domains**
-6. Tambahkan domain GitHub Pages kamu:
+6. Tambahkan domain GitHub Pages:
    ```
-   {username-kamu}.github.io
+   sagaevans.github.io
    ```
+   (Ganti dengan username GitHub kamu jika berbeda)
 
 ---
 

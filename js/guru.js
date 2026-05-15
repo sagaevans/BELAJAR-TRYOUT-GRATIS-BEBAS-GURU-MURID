@@ -1,7 +1,7 @@
 // guru.js — Mengelola fitur dashboard guru: profil, CRUD soal, paket ujian, dan hasil murid
 
 import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 import {
   doc,
   getDoc,
@@ -14,7 +14,7 @@ import {
   getDocs,
   orderBy,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 // ==========================================
 // GLOBAL STATE

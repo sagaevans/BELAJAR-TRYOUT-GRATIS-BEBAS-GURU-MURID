@@ -1,8 +1,8 @@
 // auth.js — Menangani login Google, logout, dan pengecekan role pengguna
 
 import { auth, db, googleProvider } from "./firebase-config.js";
-import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 // Track which role button was clicked (for new users)
 let pendingRole = null;
@@ -18,9 +18,9 @@ async function loginWithGoogle(intendedRole) {
     const user = result.user;
     await checkUserRole(user.uid);
   } catch (error) {
-    console.error("Login gagal:", error);
+    console.error("Firebase login error:", error.code, error.message);
     showLoading(false);
-    alert("Login gagal. Silakan coba lagi.");
+    alert("Login gagal: " + error.code);
   }
 }
 
@@ -34,25 +34,21 @@ async function checkUserRole(uid) {
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-      // User already has a role → redirect to correct dashboard
       if (data.role === "guru") {
         window.location.href = "dashboard-guru.html";
       } else if (data.role === "murid") {
         window.location.href = "dashboard-murid.html";
       }
     } else {
-      // User has no role yet
       if (pendingRole) {
-        // Direct role assignment from button click
         await saveRole(pendingRole);
       } else {
-        // Fallback: show role selection screen
         showRoleSelection();
       }
     }
   } catch (error) {
-    console.error("Gagal memeriksa role:", error);
-    alert("Terjadi kesalahan saat memeriksa data pengguna.");
+    console.error("Gagal memeriksa role:", error.code, error.message);
+    alert("Gagal memeriksa data pengguna: " + error.code);
   } finally {
     showLoading(false);
   }
@@ -85,9 +81,9 @@ async function saveRole(role) {
       window.location.href = "dashboard-murid.html";
     }
   } catch (error) {
-    console.error("Gagal menyimpan role:", error);
+    console.error("Gagal menyimpan role:", error.code, error.message);
     showLoading(false);
-    alert("Gagal menyimpan role. Silakan coba lagi.");
+    alert("Gagal menyimpan role: " + error.code);
   }
 }
 
@@ -99,8 +95,8 @@ async function logout() {
     await signOut(auth);
     window.location.href = "index.html";
   } catch (error) {
-    console.error("Logout gagal:", error);
-    alert("Logout gagal. Silakan coba lagi.");
+    console.error("Logout gagal:", error.code, error.message);
+    alert("Logout gagal: " + error.code);
   }
 }
 
@@ -114,7 +110,6 @@ function initAuthListener() {
     if (user) {
       if (currentPage === "index.html" || currentPage === "") {
         // On homepage, don't auto-redirect — let user click buttons
-        // But if they were mid-login flow, checkUserRole handles it
       } else if (currentPage === "dashboard-guru.html") {
         await verifyRole(user.uid, "guru");
       } else if (currentPage === "dashboard-murid.html") {
@@ -147,7 +142,7 @@ async function verifyRole(uid, expectedRole) {
       window.location.href = "index.html";
     }
   } catch (error) {
-    console.error("Gagal verifikasi role:", error);
+    console.error("Gagal verifikasi role:", error.code, error.message);
     window.location.href = "index.html";
   }
 }
@@ -183,7 +178,7 @@ function updateNavbarUser(displayName) {
 // EVENT BINDINGS
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  // Login buttons (new homepage)
+  // Login buttons (homepage)
   const btnLoginMurid = document.getElementById("btn-login-murid");
   if (btnLoginMurid) {
     btnLoginMurid.addEventListener("click", () => loginWithGoogle("murid"));
@@ -194,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnLoginGuru.addEventListener("click", () => loginWithGoogle("guru"));
   }
 
-  // Legacy: old Google login button (if exists on page)
+  // Legacy: old Google login button (if exists)
   const btnLogin = document.getElementById("btn-login-google");
   if (btnLogin) {
     btnLogin.addEventListener("click", () => loginWithGoogle(null));

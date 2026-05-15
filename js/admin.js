@@ -1,7 +1,7 @@
 // admin.js — Mengelola fitur admin: verifikasi token, monitoring data, dan manajemen platform
 
 import { db } from "./firebase-config.js";
-import { collection, query, where, getDocs, deleteDoc, updateDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, query, where, getDocs, deleteDoc, updateDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 // ==========================================
 // GLOBAL STATE
