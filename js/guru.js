@@ -430,7 +430,7 @@ function renderPackageList() {
           <span class="soal-meta">${pkg.mapel} — ${pkg.kelas} — ${pkg.jenjang}</span>
         </div>
         <p class="soal-preview"><strong>${pkg.title}</strong></p>
-        <p class="soal-preview">Jumlah soal: ${pkg.totalQuestions}</p>
+        <p class="soal-preview">Jumlah soal: ${pkg.totalQuestions} | Durasi: ${pkg.durationMinutes || '—'} menit</p>
         ${codeInfo}
         <div class="soal-item-actions">
           <button class="btn-sm btn-edit" data-id="${pkg.id}">Edit</button>
@@ -493,6 +493,7 @@ async function handleSavePackage() {
   const jenjang = document.getElementById("p-jenjang").value;
   const kelas = document.getElementById("p-kelas").value;
   const mapel = document.getElementById("p-mapel").value;
+  const durationInput = document.getElementById("p-duration").value.trim();
   const accessCode = document.getElementById("p-access-code").value.trim();
   const publishRadio = document.querySelector('input[name="p-publish"]:checked');
   const isPublished = publishRadio ? publishRadio.value === "publish" : false;
@@ -502,10 +503,13 @@ async function handleSavePackage() {
   if (!jenjang) { showPaketError("Pilih jenjang."); return; }
   if (!kelas) { showPaketError("Pilih kelas."); return; }
   if (!mapel) { showPaketError("Pilih mata pelajaran."); return; }
+  if (!durationInput) { showPaketError("Isi durasi ujian."); return; }
+  if (Number(durationInput) < 1) { showPaketError("Durasi ujian minimal 1 menit."); return; }
   if (selectedQuestionIds.size === 0) { showPaketError("Pilih minimal 1 soal."); return; }
   showLoading(true);
   try {
     const questionIds = Array.from(selectedQuestionIds);
+    const durationMinutes = Number(durationInput);
     const data = {
       teacherId: currentUser.uid,
       teacherUsername: currentUserData.teacherUsername,
@@ -515,6 +519,7 @@ async function handleSavePackage() {
       title, jenjang, kelas, mapel,
       questionIds,
       totalQuestions: questionIds.length,
+      durationMinutes,
       accessCode: accessCode || "",
       isPublished,
       updatedAt: serverTimestamp()
@@ -555,6 +560,7 @@ function handleEditPackage(packageId) {
   document.getElementById("p-kelas").value = pkg.kelas;
   document.getElementById("p-mapel").value = pkg.mapel;
   document.getElementById("p-access-code").value = pkg.accessCode || "";
+  document.getElementById("p-duration").value = pkg.durationMinutes || "";
   // Set publish radio
   const radios = document.querySelectorAll('input[name="p-publish"]');
   radios.forEach(r => { r.checked = (pkg.isPublished && r.value === "publish") || (!pkg.isPublished && r.value === "draft"); });
@@ -610,6 +616,7 @@ function resetPackageForm() {
   document.getElementById("p-kelas").innerHTML = '<option value="">— Pilih Kelas —</option>';
   document.getElementById("p-mapel").innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
   document.getElementById("p-access-code").value = "";
+  document.getElementById("p-duration").value = "";
   const radios = document.querySelectorAll('input[name="p-publish"]');
   radios.forEach(r => { r.checked = r.value === "draft"; });
   selectedQuestionIds = new Set();

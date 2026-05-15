@@ -1,4 +1,4 @@
-// ujian.js — Mengelola alur pengerjaan ujian: navigasi soal, pilih jawaban, timer, dan submit hasil
+// ujian.js — Mengelola alur pengerjaan ujian: navigasi soal, pilih jawaban, countdown timer, dan submit hasil
 
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
@@ -19,9 +19,12 @@ let examPackage = null;
 let questions = [];
 let answers = {}; // { questionId: "A"|"B"|"C"|"D" }
 let currentIndex = 0;
-let timerInterval = null;
-let elapsedSeconds = 0;
+let countdownInterval = null;
+let remainingSeconds = 0;
+let durationMinutes = 60;
 let startedAt = null;
+let isSubmitting = false;
+let isSubmitted = false;
 
 // ==========================================
 // INITIALIZATION
@@ -57,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnPrev) btnPrev.addEventListener("click", goToPrev);
   if (btnNext) btnNext.addEventListener("click", goToNext);
-  if (btnFinish) btnFinish.addEventListener("click", handleFinishExam);
+  if (btnFinish) btnFinish.addEventListener("click", () => handleFinishExam(false));
 
   // Option buttons
   const optionBtns = document.querySelectorAll(".exam-option-btn");
@@ -118,6 +121,10 @@ async function loadExam(examId) {
       return;
     }
 
+    // Read duration
+    durationMinutes = examPackage.durationMinutes || 60;
+    console.log("Exam duration minutes:", durationMinutes);
+
     // Set title
     const titleEl = document.getElementById("exam-title");
     const titleNav = document.getElementById("exam-title-nav");
@@ -154,9 +161,8 @@ async function loadExam(examId) {
     // Initialize answers
     answers = {};
 
-    // Start timer
-    startedAt = new Date();
-    startTimer();
+    // Start countdown timer with localStorage persistence
+    initCountdownTimer(examId);
 
     // Build question grid
     buildQuestionGrid();
@@ -182,6 +188,78 @@ async function loadExam(examId) {
 }
 
 // ==========================================
+// COUNTDOWN TIMER WITH LOCALSTORAGE PERSISTENCE
+// ==========================================
+function initCountdownTimer(examId) {
+  const storageKey = `exam_start_${examId}_${currentUser.uid}`;
+  let startTime = localStorage.getItem(storageKey);
+
+  if (!startTime) {
+    // First time — save start time
+    startTime = Date.now().toString();
+    localStorage.setItem(storageKey, startTime);
+  }
+
+  startedAt = new Date(parseInt(startTime));
+  const durationSeconds = durationMinutes * 60;
+  const elapsedMs = Date.now() - parseInt(startTime);
+  const elapsedSec = Math.floor(elapsedMs / 1000);
+  remainingSeconds = durationSeconds - elapsedSec;
+
+  console.log("Exam started at:", startedAt);
+  console.log("Elapsed seconds:", elapsedSec);
+  console.log("Remaining seconds:", remainingSeconds);
+
+  if (remainingSeconds <= 0) {
+    // Time already expired — auto submit immediately
+    remainingSeconds = 0;
+    updateCountdownDisplay();
+    console.log("Auto submit triggered (time already expired on load)");
+    setTimeout(() => handleFinishExam(true), 500);
+    return;
+  }
+
+  updateCountdownDisplay();
+  countdownInterval = setInterval(() => {
+    remainingSeconds--;
+    updateCountdownDisplay();
+    if (remainingSeconds <= 0) {
+      stopCountdown();
+      console.log("Auto submit triggered");
+      handleFinishExam(true);
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+}
+
+function updateCountdownDisplay() {
+  const timerEl = document.getElementById("exam-timer");
+  if (!timerEl) return;
+  const display = remainingSeconds > 0 ? remainingSeconds : 0;
+  if (display >= 3600) {
+    const hrs = Math.floor(display / 3600).toString().padStart(2, "0");
+    const mins = Math.floor((display % 3600) / 60).toString().padStart(2, "0");
+    const secs = (display % 60).toString().padStart(2, "0");
+    timerEl.textContent = `Sisa Waktu: ${hrs}:${mins}:${secs}`;
+  } else {
+    const mins = Math.floor(display / 60).toString().padStart(2, "0");
+    const secs = (display % 60).toString().padStart(2, "0");
+    timerEl.textContent = `Sisa Waktu: ${mins}:${secs}`;
+  }
+  // Warning color when less than 60 seconds
+  if (display <= 60 && display > 0) {
+    timerEl.style.color = "#c53030";
+    timerEl.style.fontWeight = "bold";
+  }
+}
+
+// ==========================================
 // SHOW EXAM ERROR (visible on page)
 // ==========================================
 function showExamError(message) {
@@ -195,6 +273,7 @@ function showExamError(message) {
 // SHOW QUESTION
 // ==========================================
 function showQuestion(index) {
+  if (isSubmitted) return;
   const q = questions[index];
   if (!q) return;
 
@@ -246,6 +325,7 @@ function showQuestion(index) {
 // SELECT ANSWER
 // ==========================================
 function selectAnswer(option) {
+  if (isSubmitted) return;
   const q = questions[currentIndex];
   if (!q) return;
 
@@ -264,6 +344,7 @@ function selectAnswer(option) {
 // NAVIGATION
 // ==========================================
 function goToPrev() {
+  if (isSubmitted) return;
   if (currentIndex > 0) {
     currentIndex--;
     showQuestion(currentIndex);
@@ -271,16 +352,18 @@ function goToPrev() {
 }
 
 function goToNext() {
+  if (isSubmitted) return;
   if (currentIndex < questions.length - 1) {
     currentIndex++;
     showQuestion(currentIndex);
   } else {
     // Last question — trigger finish
-    handleFinishExam();
+    handleFinishExam(false);
   }
 }
 
 function goToQuestion(index) {
+  if (isSubmitted) return;
   if (index >= 0 && index < questions.length) {
     currentIndex = index;
     showQuestion(currentIndex);
@@ -319,57 +402,42 @@ function updateQuestionGrid() {
 }
 
 // ==========================================
-// TIMER
-// ==========================================
-function startTimer() {
-  elapsedSeconds = 0;
-  updateTimerDisplay();
-  timerInterval = setInterval(() => {
-    elapsedSeconds++;
-    updateTimerDisplay();
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-}
-
-function updateTimerDisplay() {
-  const timerEl = document.getElementById("exam-timer");
-  if (!timerEl) return;
-  const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, "0");
-  const secs = (elapsedSeconds % 60).toString().padStart(2, "0");
-  timerEl.textContent = `⏱ ${mins}:${secs}`;
-}
-
-// ==========================================
 // FINISH EXAM
 // ==========================================
-function handleFinishExam() {
-  const answeredCount = Object.keys(answers).length;
-  const totalQuestions = questions.length;
-  const unanswered = totalQuestions - answeredCount;
+function handleFinishExam(autoSubmitted) {
+  if (isSubmitting || isSubmitted) return;
 
-  let message;
-  if (unanswered > 0) {
-    message = `Kamu belum menjawab ${unanswered} soal. Yakin ingin menyelesaikan ujian?`;
+  if (autoSubmitted) {
+    // Auto submit — no confirmation needed
+    alert("Waktu habis. Jawaban dikirim otomatis.");
+    stopCountdown();
+    submitExam({ autoSubmitted: true });
   } else {
-    message = "Yakin ingin mengumpulkan jawaban?";
+    // Manual submit — ask for confirmation
+    const answeredCount = Object.keys(answers).length;
+    const totalQuestions = questions.length;
+    const unanswered = totalQuestions - answeredCount;
+
+    let message;
+    if (unanswered > 0) {
+      message = `Kamu belum menjawab ${unanswered} soal. Yakin ingin menyelesaikan ujian?`;
+    } else {
+      message = "Yakin ingin mengumpulkan jawaban?";
+    }
+
+    if (!confirm(message)) return;
+
+    stopCountdown();
+    submitExam({ autoSubmitted: false });
   }
-
-  if (!confirm(message)) return;
-
-  stopTimer();
-  calculateAndSaveResult();
 }
 
 // ==========================================
-// CALCULATE SCORE & SAVE RESULT
+// SUBMIT EXAM (shared by manual + auto submit)
 // ==========================================
-async function calculateAndSaveResult() {
+async function submitExam({ autoSubmitted }) {
+  if (isSubmitting || isSubmitted) return;
+  isSubmitting = true;
   showLoading(true);
 
   try {
@@ -398,6 +466,10 @@ async function calculateAndSaveResult() {
     const totalQuestions = questions.length;
     const score = Math.round((correctCount / totalQuestions) * 100 * 100) / 100; // 2 decimal
 
+    // Calculate time spent
+    const durationSeconds = durationMinutes * 60;
+    const timeSpentSeconds = Math.max(0, durationSeconds - remainingSeconds);
+
     // Build result document
     const resultData = {
       studentId: currentUser.uid,
@@ -419,18 +491,25 @@ async function calculateAndSaveResult() {
       wrongCount: wrongCount,
       score: score,
       answers: answerDetails,
+      durationMinutes: durationMinutes,
+      durationSeconds: durationSeconds,
+      timeSpentSeconds: timeSpentSeconds,
+      autoSubmitted: autoSubmitted,
       startedAt: startedAt.toISOString(),
-      submittedAt: serverTimestamp(),
-      durationSeconds: elapsedSeconds
+      submittedAt: serverTimestamp()
     };
 
-    console.log("Saving exam result:", { examId: resultData.examId, score: resultData.score, correctCount, wrongCount });
+    console.log("Saving exam result:", { examId: resultData.examId, score: resultData.score, correctCount, wrongCount, timeSpentSeconds, autoSubmitted });
 
     // Save to Firestore
     const resultRef = await addDoc(collection(db, "exam_results"), resultData);
     console.log("Exam result saved with ID:", resultRef.id);
 
+    isSubmitted = true;
+
     // Clear localStorage exam data
+    const storageKey = `exam_start_${examPackage.id}_${currentUser.uid}`;
+    localStorage.removeItem(storageKey);
     localStorage.removeItem("currentExamId");
     localStorage.removeItem("currentExamTitle");
     localStorage.removeItem("currentExamSchoolId");
@@ -442,11 +521,12 @@ async function calculateAndSaveResult() {
     window.location.href = "hasil.html";
 
   } catch (error) {
-    console.error("Gagal menyimpan hasil:", error.code, error.message, error);
+    console.error("Gagal submit ujian:", error.code, error.message, error);
+    isSubmitting = false;
     if (error.code) {
-      alert("Gagal menyimpan hasil ujian: " + error.code);
+      alert("Gagal mengirim jawaban: " + error.code);
     } else {
-      alert("Gagal menyimpan hasil ujian. Periksa console untuk detail.");
+      alert("Gagal mengirim jawaban. Periksa console untuk detail.");
     }
     showLoading(false);
   }
