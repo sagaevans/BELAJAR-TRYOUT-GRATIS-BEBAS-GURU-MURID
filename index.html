@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Belajar Tryout Gratis — Latihan Ujian untuk Semua</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis</span>
+      <ul class="navbar-nav">
+        <li><a href="index.html" class="active">Beranda</a></li>
+        <li><a href="tryout.html">Try Out</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Loading Indicator -->
+  <div class="loading-overlay" id="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Memuat...</p>
+  </div>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero-section">
+      <h1>Mau latihan soal sekarang?</h1>
+      <p>Pilih jenjang dan mata pelajaran, langsung mulai tanpa daftar!</p>
+
+      <a href="tryout.html" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.15rem;">
+        Mulai Try Out Gratis
+      </a>
+
+      <!-- Divider -->
+      <div class="homepage-divider">
+        <span>— atau —</span>
+      </div>
+
+      <!-- Login Section -->
+      <div class="login-section">
+        <p class="login-subtitle">Punya akun sekolah?</p>
+
+        <div class="login-buttons">
+          <button class="btn btn-secondary" id="btn-login-murid">
+            👩‍🎓 Masuk sebagai Murid
+          </button>
+          <button class="btn btn-outline" id="btn-login-guru">
+            👨‍🏫 Masuk sebagai Guru
+          </button>
+        </div>
+
+        <p class="login-note">
+          Login untuk mengerjakan ujian dari gurumu dan menyimpan hasil belajarmu.
+        </p>
+      </div>
+    </section>
+
+    <!-- Role Selection Section (hidden, kept for compatibility) -->
+    <section class="role-selection" id="role-selection" style="display: none;">
+      <h2>Pilih Role Kamu</h2>
+      <p class="mb-2">Tentukan peranmu di platform ini.</p>
+      <div class="role-buttons">
+        <button class="btn btn-primary btn-role" id="btn-role-guru">👨‍🏫 Saya Guru</button>
+        <button class="btn btn-secondary btn-role" id="btn-role-murid">👩‍🎓 Saya Murid</button>
+      </div>
+      <p class="role-warning mt-3">⚠️ Perhatian: Role tidak dapat diubah setelah dipilih.</p>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Dibuat dengan ❤️ untuk pendidikan Indonesia</p>
+    <p style="margin-top: 0.5rem;"><a href="admin.html" style="font-size: 0.8rem; color: var(--text-light);">Admin</a></p>
+  </footer>
+
+  <!-- JS (ES Module) -->
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

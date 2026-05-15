@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Tryout Gratis</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis — Admin</span>
+      <ul class="navbar-nav">
+        <li><a href="index.html">Beranda</a></li>
+        <li><span class="navbar-user" id="admin-username-display" style="display:none;"></span></li>
+      </ul>
+      <button class="btn-logout" id="btn-admin-logout" style="display:none;">Keluar</button>
+    </div>
+  </nav>
+
+  <!-- Loading -->
+  <div class="loading-overlay" id="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Memuat...</p>
+  </div>
+
+  <main class="container">
+
+    <!-- TOKEN LOGIN -->
+    <section id="admin-login-section">
+      <div class="admin-login">
+        <div class="card">
+          <h2>🔒 Admin Login</h2>
+          <p class="mb-2">Masukkan GitHub Personal Access Token (PAT) milik owner repo ini.</p>
+          <div class="form-group">
+            <label for="admin-token">GitHub PAT</label>
+            <input type="password" id="admin-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+          </div>
+          <small class="form-error" id="admin-login-error" style="display: none;"></small>
+          <button class="btn btn-primary" id="btn-verify-token" style="width:100%;">Verifikasi Token</button>
+          <div class="form-hint mt-2" style="text-align:left;">
+            <strong>Cara membuat PAT:</strong><br>
+            GitHub → Settings → Developer Settings → Personal Access Tokens → Generate new token (scope: <code>read:user</code>)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN DASHBOARD -->
+    <section id="admin-dashboard-section" style="display:none;">
+      <div class="page-header">
+        <h1>Admin Dashboard</h1>
+        <p>Pantau dan kelola semua data platform.</p>
+      </div>
+
+      <!-- Ringkasan -->
+      <div class="stat-grid" id="admin-stats">
+        <div class="stat-card"><span class="stat-value" id="stat-guru">0</span><span class="stat-label">Total Guru</span></div>
+        <div class="stat-card"><span class="stat-value" id="stat-murid">0</span><span class="stat-label">Total Murid</span></div>
+        <div class="stat-card"><span class="stat-value" id="stat-sekolah">0</span><span class="stat-label">Total Sekolah</span></div>
+        <div class="stat-card"><span class="stat-value" id="stat-soal">0</span><span class="stat-label">Total Soal</span></div>
+        <div class="stat-card"><span class="stat-value" id="stat-paket">0</span><span class="stat-label">Total Paket</span></div>
+        <div class="stat-card"><span class="stat-value" id="stat-published">0</span><span class="stat-label">Published</span></div>
+        <div class="stat-card"><span class="stat-value" id="stat-results">0</span><span class="stat-label">Total Hasil</span></div>
+      </div>
+
+      <!-- Manajemen Guru -->
+      <div class="soal-section mt-3"><div class="card">
+        <h2>👨‍🏫 Manajemen Guru</h2>
+        <div class="soal-filters"><input type="text" id="admin-guru-search" placeholder="Cari username atau email..."></div>
+        <div id="admin-guru-container"><p class="text-center" style="color:var(--text-light);padding:1rem;">Memuat...</p></div>
+      </div></div>
+
+      <!-- Manajemen Murid -->
+      <div class="soal-section mt-3"><div class="card">
+        <h2>👩‍🎓 Manajemen Murid</h2>
+        <div class="soal-filters"><input type="text" id="admin-murid-search" placeholder="Cari nama atau nomor..."></div>
+        <div id="admin-murid-container"><p class="text-center" style="color:var(--text-light);padding:1rem;">Memuat...</p></div>
+      </div></div>
+
+      <!-- Manajemen Sekolah -->
+      <div class="soal-section mt-3"><div class="card">
+        <h2>🏫 Manajemen Sekolah</h2>
+        <div class="soal-filters"><input type="text" id="admin-school-search" placeholder="Cari sekolah atau kota..."></div>
+        <div id="admin-school-container"><p class="text-center" style="color:var(--text-light);padding:1rem;">Memuat...</p></div>
+      </div></div>
+
+      <!-- Manajemen Soal -->
+      <div class="soal-section mt-3"><div class="card">
+        <h2>📝 Manajemen Soal</h2>
+        <div class="soal-filters">
+          <select id="admin-soal-jenjang"><option value="">Semua Jenjang</option><option value="SMP">SMP</option><option value="SMA">SMA</option><option value="SMK">SMK</option></select>
+          <input type="text" id="admin-soal-search" placeholder="Cari mapel atau guru...">
+        </div>
+        <div id="admin-soal-container"><p class="text-center" style="color:var(--text-light);padding:1rem;">Memuat...</p></div>
+      </div></div>
+
+      <!-- Manajemen Paket -->
+      <div class="soal-section mt-3"><div class="card">
+        <h2>📦 Manajemen Paket Ujian</h2>
+        <div class="soal-filters">
+          <select id="admin-paket-status"><option value="">Semua Status</option><option value="published">Published</option><option value="draft">Draft</option></select>
+          <input type="text" id="admin-paket-search" placeholder="Cari judul atau guru...">
+        </div>
+        <div id="admin-paket-container"><p class="text-center" style="color:var(--text-light);padding:1rem;">Memuat...</p></div>
+      </div></div>
+
+      <!-- Semua Hasil -->
+      <div class="soal-section mt-3"><div class="card">
+        <h2>📊 Semua Hasil Ujian</h2>
+        <div class="soal-filters">
+          <input type="text" id="admin-result-search" placeholder="Cari nama murid atau ujian...">
+          <select id="admin-result-score"><option value="">Semua Nilai</option><option value="high">>= 75</option><option value="mid">60-74</option><option value="low">< 60</option></select>
+        </div>
+        <div id="admin-result-container"><p class="text-center" style="color:var(--text-light);padding:1rem;">Memuat...</p></div>
+      </div></div>
+
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© 2024 Belajar Tryout Gratis — Open Source untuk Pendidikan Indonesia</p>
+  </footer>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

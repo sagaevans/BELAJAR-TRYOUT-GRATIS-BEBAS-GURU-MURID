@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Murid — Tryout Gratis</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis</span>
+      <ul class="navbar-nav">
+        <li><a href="dashboard-murid.html" class="active">Dashboard Murid</a></li>
+        <li><span class="navbar-user" id="user-display-name">—</span></li>
+      </ul>
+      <button class="btn-logout" id="btn-logout">Keluar</button>
+    </div>
+  </nav>
+
+  <!-- Loading Indicator -->
+  <div class="loading-overlay" id="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Memuat...</p>
+  </div>
+
+  <!-- Access Code Modal -->
+  <div class="modal-overlay" id="access-code-modal" style="display: none;">
+    <div class="modal-content">
+      <h3>🔒 Masukkan Kode Akses</h3>
+      <p>Ujian ini memerlukan kode akses dari guru.</p>
+      <div class="form-group">
+        <input type="text" id="access-code-input" placeholder="Masukkan kode akses..." autocomplete="off">
+      </div>
+      <small class="form-error" id="access-code-error" style="display: none;"></small>
+      <div class="modal-buttons">
+        <button class="btn btn-primary" id="btn-submit-code">Masuk</button>
+        <button class="btn btn-outline" id="btn-cancel-code">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- PROFILE COMPLETION FORM -->
+    <section id="profile-form-section" style="display: none;">
+      <div class="page-header">
+        <h1>Lengkapi Profil Murid</h1>
+        <p>Isi data berikut sebelum mulai menggunakan dashboard.</p>
+      </div>
+      <div class="card profile-form-card">
+        <div class="form-group">
+          <label for="student-name">Nama Lengkap</label>
+          <input type="text" id="student-name" placeholder="Contoh: Andi Pratama" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="student-number-type">Jenis Nomor Identitas</label>
+          <select id="student-number-type">
+            <option value="">— Pilih Jenis Nomor —</option>
+            <option value="nomor_absen">Nomor Absen</option>
+            <option value="nis">NIS</option>
+            <option value="nisn">NISN</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="student-number">Nomor Identitas</label>
+          <input type="text" id="student-number" placeholder="Masukkan nomor identitasmu" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="student-school">Sekolah Kamu</label>
+          <select id="student-school">
+            <option value="">Memuat daftar sekolah...</option>
+          </select>
+          <small class="form-hint" id="school-hint" style="display: none;">Belum ada sekolah terdaftar. Minta gurumu untuk mendaftar terlebih dahulu.</small>
+        </div>
+        <div class="school-preview" id="profile-preview">
+          <p>Profil kamu:</p>
+          <div class="preview-details">
+            <p>Nama: <strong id="preview-name">—</strong></p>
+            <p>Nomor: <strong id="preview-number">—</strong></p>
+            <p>Sekolah: <strong id="preview-school">—</strong></p>
+          </div>
+        </div>
+        <small class="form-error" id="form-error" style="display: none;"></small>
+        <button class="btn btn-primary mt-3" id="btn-save-profile" style="width: 100%;">Simpan Profil</button>
+      </div>
+    </section>
+
+    <!-- MAIN DASHBOARD -->
+    <section id="dashboard-content" style="display: none;">
+      <div class="page-header">
+        <h1>Dashboard Murid</h1>
+        <p id="welcome-message">Cari ujian, kerjakan soal, dan pantau perkembangan nilaimu.</p>
+      </div>
+
+      <div class="alert alert-success" id="success-message" style="display: none;"></div>
+
+      <!-- RINGKASAN -->
+      <div class="stat-grid" id="ringkasan-section">
+        <div class="stat-card">
+          <span class="stat-value" id="ringkasan-total">0</span>
+          <span class="stat-label">Total Ujian</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="ringkasan-avg">—</span>
+          <span class="stat-label">Rata-rata Nilai</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="ringkasan-high">—</span>
+          <span class="stat-label">Nilai Tertinggi</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="ringkasan-latest">—</span>
+          <span class="stat-label" id="ringkasan-latest-label">Ujian Terbaru</span>
+        </div>
+      </div>
+
+      <!-- PROFIL SAYA -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>👤 Profil Saya</h2>
+          <div id="profile-view-mode">
+            <div class="profile-info-grid">
+              <p>Nama: <strong id="pv-name">—</strong></p>
+              <p>Nomor: <strong id="pv-number">—</strong></p>
+              <p>Sekolah: <strong id="pv-school">—</strong></p>
+              <p>Email: <strong id="pv-email">—</strong></p>
+              <p>Bergabung sejak: <strong id="pv-joined">—</strong></p>
+            </div>
+            <button class="btn btn-outline mt-2" id="btn-edit-profile">Edit Profil</button>
+          </div>
+          <div id="profile-edit-mode" style="display: none;">
+            <div class="form-group">
+              <label for="edit-name">Nama Lengkap</label>
+              <input type="text" id="edit-name" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="edit-number-type">Jenis Nomor Identitas</label>
+              <select id="edit-number-type">
+                <option value="nomor_absen">Nomor Absen</option>
+                <option value="nis">NIS</option>
+                <option value="nisn">NISN</option>
+                <option value="lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="edit-number">Nomor Identitas</label>
+              <input type="text" id="edit-number" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label>Sekolah</label>
+              <input type="text" id="edit-school" disabled style="background:#f1f5f9;cursor:not-allowed;">
+              <small class="form-hint">Hubungi admin untuk mengubah sekolah.</small>
+            </div>
+            <small class="form-error" id="edit-profile-error" style="display: none;"></small>
+            <div class="soal-form-buttons">
+              <button class="btn btn-primary" id="btn-save-edit-profile">Simpan Perubahan</button>
+              <button class="btn btn-outline" id="btn-cancel-edit-profile">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARI UJIAN -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>🔍 Cari Ujian</h2>
+          <div class="soal-filters">
+            <select id="exam-filter-jenjang"><option value="">Semua Jenjang</option><option value="SMP">SMP</option><option value="SMA">SMA</option><option value="SMK">SMK</option></select>
+            <select id="exam-filter-kelas"><option value="">Semua Kelas</option></select>
+            <input type="text" id="exam-filter-mapel" placeholder="Cari mapel...">
+          </div>
+          <p class="soal-total" id="exam-total">Total: 0 ujian tersedia</p>
+          <div id="exam-list-container">
+            <p class="text-center" style="color: var(--text-light); padding: 2rem;">Memuat ujian...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIWAYAT UJIAN -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>📋 Riwayat Ujian</h2>
+          <div class="soal-filters">
+            <input type="text" id="history-filter-mapel" placeholder="Cari mapel...">
+            <select id="history-filter-jenjang"><option value="">Semua Jenjang</option><option value="SMP">SMP</option><option value="SMA">SMA</option><option value="SMK">SMK</option></select>
+            <select id="history-filter-score">
+              <option value="">Semua Nilai</option>
+              <option value="high">Nilai >= 75</option>
+              <option value="mid">Nilai 60-74</option>
+              <option value="low">Nilai < 60</option>
+            </select>
+          </div>
+          <p class="soal-total" id="history-total">Total: 0 riwayat</p>
+          <div id="history-list-container">
+            <p class="text-center" style="color: var(--text-light); padding: 2rem;">Memuat riwayat...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- REKAP NILAI -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>📊 Rekap Nilai</h2>
+          <div id="recap-content">
+            <p class="text-center" style="color: var(--text-light); padding: 2rem;">Memuat rekap...</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2024 Belajar Tryout Gratis — Open Source untuk Pendidikan Indonesia</p>
+  </footer>
+
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/murid.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // USERS COLLECTION
+    // ==========================================
+    match /users/{userId} {
+      // User can read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // User can create their own document (on first login + role selection)
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // User can update their own document (profile completion, edit)
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // No delete via app — only via Firebase Console
+      allow delete: if false;
+    }
+
+    // Allow querying users collection for teacherUsername uniqueness check
+    match /users/{userId} {
+      allow list: if request.auth != null
+        && request.query.limit <= 1
+        && resource.data.keys().hasOnly(['teacherUsername']);
+    }
+
+    // ==========================================
+    // SCHOOLS COLLECTION
+    // ==========================================
+    match /schools/{schoolId} {
+      // Any authenticated user can read schools (for dropdown)
+      allow read: if request.auth != null;
+
+      // Only authenticated guru can create schools
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "guru";
+
+      // Only the teacher who created the school can update it
+      allow update: if request.auth != null
+        && resource.data.createdBy == request.auth.uid;
+
+      // No delete via app — only via Firebase Console
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // TEACHER_QUESTIONS COLLECTION
+    // ==========================================
+    match /teacher_questions/{questionId} {
+      // Only owner can read their own questions
+      allow read: if request.auth != null
+        && resource.data.teacherId == request.auth.uid;
+
+      // Only authenticated guru can create questions
+      // teacherId in the new document must match auth uid
+      allow create: if request.auth != null
+        && request.resource.data.teacherId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "guru";
+
+      // Only owner can update their own questions
+      allow update: if request.auth != null
+        && resource.data.teacherId == request.auth.uid;
+
+      // Only owner can delete their own questions
+      allow delete: if request.auth != null
+        && resource.data.teacherId == request.auth.uid;
+    }
+
+    // ==========================================
+    // EXAM_PACKAGES COLLECTION
+    // ==========================================
+    match /exam_packages/{packageId} {
+      // Any authenticated user can read published packages
+      // Owner can read all their own packages (published or draft)
+      allow read: if request.auth != null
+        && (resource.data.isPublished == true || resource.data.teacherId == request.auth.uid);
+
+      // Only authenticated guru can create packages
+      // teacherId must match auth uid
+      allow create: if request.auth != null
+        && request.resource.data.teacherId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "guru";
+
+      // Only owner can update their own packages
+      allow update: if request.auth != null
+        && resource.data.teacherId == request.auth.uid;
+
+      // Only owner can delete their own packages
+      allow delete: if request.auth != null
+        && resource.data.teacherId == request.auth.uid;
+    }
+
+    // ==========================================
+    // EXAM_RESULTS COLLECTION
+    // ==========================================
+    match /exam_results/{resultId} {
+      // Students can read their own results
+      // Teachers can read results where they are the teacher
+      allow read: if request.auth != null
+        && (resource.data.studentId == request.auth.uid
+            || resource.data.teacherId == request.auth.uid);
+
+      // Any authenticated user can create a result
+      // studentId must match auth uid (prevent impersonation)
+      allow create: if request.auth != null
+        && request.resource.data.studentId == request.auth.uid;
+
+      // No update or delete — results are immutable
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

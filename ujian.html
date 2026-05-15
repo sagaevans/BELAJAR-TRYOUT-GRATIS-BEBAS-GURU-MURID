@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kerjakan Ujian — Tryout Gratis</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis</span>
+      <ul class="navbar-nav">
+        <li><span class="navbar-user" id="exam-title-nav">Ujian</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Loading Indicator -->
+  <div class="loading-overlay" id="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Memuat soal...</p>
+  </div>
+
+  <!-- Exam Content -->
+  <main class="container">
+    <div class="exam-container">
+
+      <!-- Exam Header -->
+      <div class="exam-header-bar">
+        <h2 id="exam-title">Memuat ujian...</h2>
+        <div class="exam-info-row">
+          <span id="exam-question-number">Soal 0 dari 0</span>
+          <span id="exam-timer">⏱ 00:00</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="exam-progress" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Question Area -->
+      <div class="exam-question-area" id="exam-question-area" style="display: none;">
+        <div class="exam-question">
+          <h3 id="question-number-label">Soal Nomor 1</h3>
+          <p id="question-text">—</p>
+
+          <div class="exam-options" id="exam-options">
+            <button class="exam-option-btn" data-option="A">
+              <span class="option-key">A</span>
+              <span class="option-text" id="option-text-a">—</span>
+            </button>
+            <button class="exam-option-btn" data-option="B">
+              <span class="option-key">B</span>
+              <span class="option-text" id="option-text-b">—</span>
+            </button>
+            <button class="exam-option-btn" data-option="C">
+              <span class="option-key">C</span>
+              <span class="option-text" id="option-text-c">—</span>
+            </button>
+            <button class="exam-option-btn" data-option="D">
+              <span class="option-key">D</span>
+              <span class="option-text" id="option-text-d">—</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="exam-nav-buttons">
+          <button class="btn btn-outline" id="btn-prev" disabled>⬅ Sebelumnya</button>
+          <button class="btn btn-primary" id="btn-next">Selanjutnya ➡</button>
+        </div>
+
+        <!-- Question Number Grid -->
+        <div class="question-grid-section">
+          <p class="question-grid-label">Navigasi Soal:</p>
+          <div class="question-grid" id="question-grid"></div>
+        </div>
+
+        <!-- Finish Button -->
+        <div class="exam-finish-section">
+          <button class="btn btn-secondary" id="btn-finish">✅ Selesai & Kumpulkan</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2024 Belajar Tryout Gratis — Open Source untuk Pendidikan Indonesia</p>
+  </footer>
+
+  <!-- JS (ES Module) -->
+  <script type="module" src="js/ujian.js"></script>
+</body>
+</html>

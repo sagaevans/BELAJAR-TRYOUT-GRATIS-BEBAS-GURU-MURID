@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Try Out Gratis — Latihan Soal Tanpa Daftar</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis</span>
+      <ul class="navbar-nav">
+        <li><a href="index.html">Beranda</a></li>
+        <li><a href="tryout.html" class="active">Try Out</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- ======== STEP 1: Pilih Jenjang ======== -->
+    <section id="step-1" class="tryout-step">
+      <div class="page-header">
+        <h1>Pilih Jenjang</h1>
+        <p>Pilih jenjang pendidikanmu untuk mulai latihan soal.</p>
+      </div>
+      <div class="jenjang-grid">
+        <button class="jenjang-btn" data-jenjang="smp">
+          <span class="jenjang-icon">🏫</span>
+          <span class="jenjang-label">SMP</span>
+          <span class="jenjang-desc">Kelas 7-9</span>
+        </button>
+        <button class="jenjang-btn" data-jenjang="sma">
+          <span class="jenjang-icon">🎓</span>
+          <span class="jenjang-label">SMA</span>
+          <span class="jenjang-desc">Kelas 10-12</span>
+        </button>
+        <button class="jenjang-btn" data-jenjang="smk">
+          <span class="jenjang-icon">🔧</span>
+          <span class="jenjang-label">SMK</span>
+          <span class="jenjang-desc">Kelas 10-12</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ======== STEP 2: Pilih Mapel ======== -->
+    <section id="step-2" class="tryout-step" style="display:none;">
+      <div class="page-header">
+        <h1>Pilih Mata Pelajaran</h1>
+        <p id="step2-subtitle">Pilih mata pelajaran yang ingin kamu latihan.</p>
+      </div>
+      <div id="mapel-container"></div>
+      <button class="btn btn-outline mt-3" id="btn-back-step1">⬅ Kembali Pilih Jenjang</button>
+    </section>
+
+    <!-- ======== STEP 3: Kerjakan Soal ======== -->
+    <section id="step-3" class="tryout-step" style="display:none;">
+      <div class="exam-container">
+        <!-- Header -->
+        <div class="exam-header-bar">
+          <h2 id="tryout-title">Memuat...</h2>
+          <div class="exam-info-row">
+            <span id="tryout-question-number">Soal 0 dari 0</span>
+            <span id="tryout-timer">⏱ 00:00</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="tryout-progress" style="width:0%;"></div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="tryout-empty" style="display:none;" class="text-center">
+          <p style="color:var(--text-light);padding:2rem;font-size:1.05rem;">Soal untuk mata pelajaran ini belum tersedia. Coba mata pelajaran lain atau kunjungi lagi nanti.</p>
+          <button class="btn btn-outline" id="btn-back-step2-empty">⬅ Kembali Pilih Mapel</button>
+        </div>
+
+        <!-- Question Area -->
+        <div id="tryout-question-area" style="display:none;">
+          <div class="exam-question">
+            <h3 id="tryout-q-number">Soal Nomor 1</h3>
+            <p id="tryout-q-text">—</p>
+            <div class="exam-options" id="tryout-options">
+              <button class="exam-option-btn" data-option="A"><span class="option-key">A</span><span class="option-text" id="tryout-opt-a">—</span></button>
+              <button class="exam-option-btn" data-option="B"><span class="option-key">B</span><span class="option-text" id="tryout-opt-b">—</span></button>
+              <button class="exam-option-btn" data-option="C"><span class="option-key">C</span><span class="option-text" id="tryout-opt-c">—</span></button>
+              <button class="exam-option-btn" data-option="D"><span class="option-key">D</span><span class="option-text" id="tryout-opt-d">—</span></button>
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <div class="exam-nav-buttons">
+            <button class="btn btn-outline" id="tryout-btn-prev" disabled>⬅ Sebelumnya</button>
+            <button class="btn btn-primary" id="tryout-btn-next">Selanjutnya ➡</button>
+          </div>
+
+          <!-- Question Grid -->
+          <div class="question-grid-section">
+            <p class="question-grid-label">Navigasi Soal:</p>
+            <div class="question-grid" id="tryout-grid"></div>
+          </div>
+
+          <!-- Finish -->
+          <div class="exam-finish-section">
+            <button class="btn btn-secondary" id="tryout-btn-finish">✅ Selesai & Lihat Hasil</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline mt-3" id="btn-back-step2" style="display:none;">⬅ Kembali Pilih Mapel</button>
+    </section>
+
+    <!-- ======== STEP 4: Hasil ======== -->
+    <section id="step-4" class="tryout-step" style="display:none;">
+      <div class="result-summary-card" id="tryout-result-summary">
+        <h1 id="tryout-result-title">Hasil Try Out</h1>
+        <div class="result-score-big" id="tryout-result-score">0</div>
+        <p class="result-score-label">Nilai Kamu</p>
+        <div class="result-info-grid">
+          <div class="result-info-item"><span class="result-info-label">Benar</span><strong id="tryout-result-correct" class="text-green">0</strong></div>
+          <div class="result-info-item"><span class="result-info-label">Salah</span><strong id="tryout-result-wrong" class="text-red">0</strong></div>
+          <div class="result-info-item"><span class="result-info-label">Total Soal</span><strong id="tryout-result-total">0</strong></div>
+          <div class="result-info-item"><span class="result-info-label">Durasi</span><strong id="tryout-result-duration">00:00</strong></div>
+        </div>
+      </div>
+
+      <div class="tryout-result-actions">
+        <button class="btn btn-primary" id="tryout-btn-retry">🔄 Coba Lagi</button>
+        <button class="btn btn-outline" id="tryout-btn-other-mapel">📚 Pilih Mapel Lain</button>
+      </div>
+
+      <!-- Answer Review -->
+      <div class="answer-review-section" id="tryout-review-section">
+        <h2>📋 Review Jawaban</h2>
+        <div id="tryout-review-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Dibuat dengan ❤️ untuk pendidikan Indonesia</p>
+  </footer>
+
+  <!-- JS -->
+  <script type="module" src="js/tryout.js"></script>
+</body>
+</html>

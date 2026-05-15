@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hasil Ujian — Tryout Gratis</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis</span>
+      <ul class="navbar-nav">
+        <li><a href="dashboard-murid.html">Kembali ke Dashboard</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Loading Indicator -->
+  <div class="loading-overlay" id="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Memuat hasil...</p>
+  </div>
+
+  <!-- Result Content -->
+  <main class="container">
+
+    <!-- Score Summary -->
+    <div class="result-summary-card" id="result-summary" style="display: none;">
+      <h1 id="result-exam-title">—</h1>
+      <div class="result-score-big" id="result-score">0</div>
+      <p class="result-score-label">Nilai Kamu</p>
+
+      <div class="result-info-grid">
+        <div class="result-info-item">
+          <span class="result-info-label">Nama</span>
+          <strong id="result-student-name">—</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Sekolah</span>
+          <strong id="result-school-name">—</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Mapel</span>
+          <strong id="result-mapel">—</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Kelas / Jenjang</span>
+          <strong id="result-kelas-jenjang">—</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Jawaban Benar</span>
+          <strong id="result-correct" class="text-green">0</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Jawaban Salah</span>
+          <strong id="result-wrong" class="text-red">0</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Jumlah Soal</span>
+          <strong id="result-total">0</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Durasi</span>
+          <strong id="result-duration">00:00</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Guru</span>
+          <strong id="result-teacher">—</strong>
+        </div>
+        <div class="result-info-item">
+          <span class="result-info-label">Tanggal</span>
+          <strong id="result-date">—</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Answer Review Section -->
+    <div class="answer-review-section" id="answer-review-section" style="display: none;">
+      <h2>📋 Review Jawaban</h2>
+      <div id="answer-review-container"></div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-3" id="back-btn-section" style="display: none;">
+      <a href="dashboard-murid.html" class="btn btn-primary" id="btn-back-dashboard">Kembali ke Dashboard</a>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2024 Belajar Tryout Gratis — Open Source untuk Pendidikan Indonesia</p>
+  </footer>
+
+  <!-- JS (ES Module) -->
+  <script type="module" src="js/hasil.js"></script>
+</body>
+</html>

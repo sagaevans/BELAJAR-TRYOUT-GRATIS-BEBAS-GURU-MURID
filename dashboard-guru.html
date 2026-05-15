@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Guru — Tryout Gratis</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <span class="navbar-brand">📝 Tryout Gratis</span>
+      <ul class="navbar-nav">
+        <li><a href="dashboard-guru.html" class="active">Dashboard Guru</a></li>
+        <li><span class="navbar-user" id="user-display-name">—</span></li>
+      </ul>
+      <button class="btn-logout" id="btn-logout">Keluar</button>
+    </div>
+  </nav>
+
+  <!-- Loading Indicator -->
+  <div class="loading-overlay" id="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Memuat...</p>
+  </div>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- ============================================
+         PROFILE COMPLETION FORM (hidden when complete)
+         ============================================ -->
+    <section id="profile-form-section" style="display: none;">
+      <div class="page-header">
+        <h1>Lengkapi Profil Guru</h1>
+        <p>Isi data berikut sebelum mulai menggunakan dashboard.</p>
+      </div>
+
+      <div class="card profile-form-card">
+        <div class="form-group">
+          <label for="teacher-username">Username Unik Guru</label>
+          <input type="text" id="teacher-username" placeholder="Contoh: bu_sari_smk3sby" autocomplete="off">
+          <small class="form-hint">Huruf kecil, tanpa spasi, hanya huruf, angka, dan underscore (_)</small>
+          <small class="form-error" id="username-error" style="display: none;"></small>
+        </div>
+        <div class="form-group">
+          <label for="school-level">Jenjang Sekolah</label>
+          <select id="school-level">
+            <option value="">— Pilih Jenjang —</option>
+            <option value="SMP">SMP</option>
+            <option value="SMA">SMA</option>
+            <option value="SMK">SMK</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="school-status">Status Sekolah</label>
+          <select id="school-status">
+            <option value="">— Pilih Status —</option>
+            <option value="NEGERI">NEGERI</option>
+            <option value="SWASTA">SWASTA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="school-name-number">Nama atau Nomor Sekolah</label>
+          <input type="text" id="school-name-number" placeholder="Contoh: 3 atau AL-FALAH" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="school-city">Kota</label>
+          <input type="text" id="school-city" placeholder="Contoh: SURABAYA" autocomplete="off">
+        </div>
+        <div class="school-preview" id="school-preview">
+          <p>Nama sekolah kamu akan tampil sebagai:</p>
+          <strong id="school-preview-name">—</strong>
+        </div>
+        <small class="form-error" id="form-error" style="display: none;"></small>
+        <button class="btn btn-primary mt-3" id="btn-save-profile" style="width: 100%;">Simpan Profil</button>
+      </div>
+    </section>
+
+    <!-- ============================================
+         MAIN DASHBOARD (shown when profile complete)
+         ============================================ -->
+    <section id="dashboard-content" style="display: none;">
+      <div class="page-header">
+        <h1>Dashboard Guru</h1>
+        <p id="welcome-message">Kelola soal, paket ujian, dan pantau hasil murid Anda.</p>
+      </div>
+
+      <!-- Success message -->
+      <div class="alert alert-success" id="success-message" style="display: none;"></div>
+
+      <div class="card-grid">
+        <!-- Ringkasan -->
+        <div class="card">
+          <h2>📊 Ringkasan</h2>
+          <p>Sekolah: <strong id="dashboard-school-name">—</strong></p>
+          <p>Total soal: <strong id="total-soal-count">0</strong></p>
+          <p>Total paket ujian: <strong id="total-paket-count">0</strong></p>
+          <p>Total murid mengerjakan: <strong>0</strong></p>
+        </div>
+
+        <!-- Ringkasan Stats -->
+        <div class="card">
+          <h2>📈 Statistik</h2>
+          <p>Paket published: <strong id="total-published-count">0</strong></p>
+          <p>Total murid mengerjakan: <strong id="total-peserta-count">0</strong></p>
+          <p>Rata-rata nilai semua ujian: <strong id="avg-all-score">—</strong></p>
+        </div>
+      </div>
+
+      <!-- ============================================
+           SOAL SAYA — FULL SECTION
+           ============================================ -->
+      <div class="soal-section mt-3">
+        <div class="soal-layout">
+
+          <!-- Part A: Form Tambah/Edit Soal -->
+          <div class="card soal-form-card">
+            <h2 id="soal-form-title">📝 Tambah Soal Baru</h2>
+            <input type="hidden" id="edit-question-id" value="">
+            <div class="form-group">
+              <label for="q-jenjang">Jenjang</label>
+              <select id="q-jenjang">
+                <option value="">— Pilih Jenjang —</option>
+                <option value="SMP">SMP</option>
+                <option value="SMA">SMA</option>
+                <option value="SMK">SMK</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="q-kelas">Kelas</label>
+              <select id="q-kelas"><option value="">— Pilih Kelas —</option></select>
+            </div>
+            <div class="form-group">
+              <label for="q-mapel">Mata Pelajaran</label>
+              <input type="text" id="q-mapel" placeholder="Contoh: Matematika, Bahasa Indonesia, IPA" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="q-text">Teks Soal</label>
+              <textarea id="q-text" rows="4" placeholder="Tulis pertanyaan di sini..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Pilihan Jawaban</label>
+              <div class="options-inputs">
+                <div class="option-row"><span class="option-label">A</span><input type="text" id="q-option-a" placeholder="Pilihan A"></div>
+                <div class="option-row"><span class="option-label">B</span><input type="text" id="q-option-b" placeholder="Pilihan B"></div>
+                <div class="option-row"><span class="option-label">C</span><input type="text" id="q-option-c" placeholder="Pilihan C"></div>
+                <div class="option-row"><span class="option-label">D</span><input type="text" id="q-option-d" placeholder="Pilihan D"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="q-answer">Jawaban Benar</label>
+              <select id="q-answer">
+                <option value="">— Pilih Jawaban —</option>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="q-explanation">Pembahasan (opsional)</label>
+              <textarea id="q-explanation" rows="3" placeholder="Tulis pembahasan jawaban di sini (opsional)..."></textarea>
+            </div>
+            <small class="form-error" id="soal-form-error" style="display: none;"></small>
+            <div class="soal-form-buttons">
+              <button class="btn btn-primary" id="btn-save-soal">Simpan Soal</button>
+              <button class="btn btn-outline" id="btn-cancel-soal">Batal</button>
+            </div>
+          </div>
+
+          <!-- Part B: Daftar Soal Saya -->
+          <div class="card soal-list-card">
+            <h2>📋 Daftar Soal Saya</h2>
+            <div class="soal-filters">
+              <select id="filter-jenjang"><option value="">Semua Jenjang</option><option value="SMP">SMP</option><option value="SMA">SMA</option><option value="SMK">SMK</option></select>
+              <select id="filter-kelas"><option value="">Semua Kelas</option></select>
+              <input type="text" id="filter-mapel" placeholder="Cari mapel...">
+            </div>
+            <p class="soal-total" id="soal-total">Total: 0 soal</p>
+            <div id="soal-list-container">
+              <p class="text-center" style="color: var(--text-light); padding: 2rem;">Memuat soal...</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================
+           PAKET UJIAN SAYA — FULL SECTION
+           ============================================ -->
+      <div class="soal-section mt-3">
+        <div class="soal-layout">
+
+          <!-- Part A: Form Buat/Edit Paket -->
+          <div class="card soal-form-card">
+            <h2 id="paket-form-title">📦 Buat Paket Ujian Baru</h2>
+            <input type="hidden" id="edit-paket-id" value="">
+
+            <div class="form-group">
+              <label for="p-title">Judul Paket</label>
+              <input type="text" id="p-title" placeholder="Contoh: Ulangan Harian Matematika Kelas 10" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="p-jenjang">Jenjang</label>
+              <select id="p-jenjang">
+                <option value="">— Pilih Jenjang —</option>
+                <option value="SMP">SMP</option>
+                <option value="SMA">SMA</option>
+                <option value="SMK">SMK</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="p-kelas">Kelas</label>
+              <select id="p-kelas"><option value="">— Pilih Kelas —</option></select>
+            </div>
+            <div class="form-group">
+              <label for="p-mapel">Mata Pelajaran</label>
+              <input type="text" id="p-mapel" placeholder="Contoh: Matematika" autocomplete="off">
+            </div>
+
+            <!-- Question selection -->
+            <div class="form-group">
+              <label>Pilih Soal untuk Paket Ini</label>
+              <div class="soal-filters" style="margin-bottom: 0.75rem;">
+                <select id="p-filter-jenjang"><option value="">Semua Jenjang</option><option value="SMP">SMP</option><option value="SMA">SMA</option><option value="SMK">SMK</option></select>
+                <select id="p-filter-kelas"><option value="">Semua Kelas</option></select>
+                <input type="text" id="p-filter-mapel" placeholder="Filter mapel...">
+              </div>
+              <p class="soal-total" id="p-selected-count">Soal dipilih: 0</p>
+              <div id="p-question-select-list" class="question-select-list">
+                <p style="color:var(--text-light);padding:1rem;text-align:center;">Memuat soal...</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="p-access-code">Kode Akses (opsional)</label>
+              <input type="text" id="p-access-code" placeholder="Kosongkan jika tidak pakai kode akses" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label>Status Publikasi</label>
+              <div class="publish-options">
+                <label class="radio-label"><input type="radio" name="p-publish" value="draft" checked> Simpan sebagai Draft</label>
+                <label class="radio-label"><input type="radio" name="p-publish" value="publish"> Publish Sekarang</label>
+              </div>
+            </div>
+
+            <small class="form-error" id="paket-form-error" style="display: none;"></small>
+            <div class="soal-form-buttons">
+              <button class="btn btn-primary" id="btn-save-paket">Simpan Paket</button>
+              <button class="btn btn-outline" id="btn-cancel-paket">Batal</button>
+            </div>
+          </div>
+
+          <!-- Part B: Daftar Paket Ujian -->
+          <div class="card soal-list-card">
+            <h2>📋 Daftar Paket Ujian</h2>
+            <p class="soal-total" id="paket-total">Total: 0 paket</p>
+            <div id="paket-list-container">
+              <p class="text-center" style="color: var(--text-light); padding: 2rem;">Memuat paket...</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================
+           HASIL MURID & ANALYTICS
+           ============================================ -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>📈 Hasil Murid</h2>
+          <div class="soal-filters">
+            <input type="text" id="result-filter-name" placeholder="Cari nama murid...">
+            <select id="result-filter-exam">
+              <option value="">Semua Paket Ujian</option>
+            </select>
+            <select id="result-filter-score">
+              <option value="">Semua Nilai</option>
+              <option value="high">Nilai >= 75</option>
+              <option value="mid">Nilai 60-74</option>
+              <option value="low">Nilai < 60</option>
+            </select>
+          </div>
+          <p class="soal-total" id="result-total">Total: 0 hasil</p>
+          <div id="result-list-container">
+            <p class="text-center" style="color: var(--text-light); padding: 2rem;">Memuat hasil murid...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALISIS PER UJIAN -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>📊 Analisis Per Ujian</h2>
+          <div class="form-group">
+            <label for="analysis-exam-select">Pilih Paket Ujian untuk Dianalisis</label>
+            <select id="analysis-exam-select">
+              <option value="">— Pilih Paket —</option>
+            </select>
+          </div>
+          <div id="exam-analysis-content">
+            <p class="text-center" style="color: var(--text-light); padding: 1rem;">Pilih paket ujian untuk melihat analisis.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALISIS PER SOAL -->
+      <div class="soal-section mt-3">
+        <div class="card">
+          <h2>🔍 Analisis Per Soal</h2>
+          <div id="question-analysis-content">
+            <p class="text-center" style="color: var(--text-light); padding: 1rem;">Pilih paket ujian di atas untuk melihat analisis per soal.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2024 Belajar Tryout Gratis — Open Source untuk Pendidikan Indonesia</p>
+  </footer>
+
+  <!-- JS (ES Module) -->
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/guru.js"></script>
+</body>
+</html>
